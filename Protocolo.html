@@ -316,8 +316,11 @@ table { max-width:100%; }
 canvas { max-width:100%; }
 @media(max-width:799px) {
   .audit-controls { margin:8px;padding:12px; }
-  .grid,.grid-2,.layout,.main-grid,.kpi-row,.metrics-row { grid-template-columns:minmax(0,1fr)!important; }
-  .card,.panel { min-width:0; }
+  .grid,.grid-2,.layout,.layout-12,.layout-2,.layout-3,.main-grid,.kpi-row,.metrics-row { grid-template-columns:minmax(0,1fr)!important; }
+  .card,.panel,.col { min-width:0;max-width:100%; }
+  .state-row { grid-template-columns:minmax(0,90px) minmax(0,1fr) 60px; }
+  .audit-controls details { flex-basis:100%;min-width:0;max-width:100%; }
+  .audit-controls textarea { box-sizing:border-box; }
   .tab-bar,.tabs,.nav-tabs { overflow-x:auto; }
   .matrix-table { overflow-x:auto;max-width:100%; }
 }
@@ -325,7 +328,7 @@ canvas { max-width:100%; }
 
 #protocol-text details{margin:12px 0;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px}#protocol-text summary{cursor:pointer;min-height:44px}#protocol-text p{line-height:1.7}#protocol-text h3{margin:16px 0 8px}
 </style>
-<meta name="markov-build" content="2026-10-03-r2">
+<meta name="markov-build" content="2026-10-03-r3">
 </head>
 <body>
 

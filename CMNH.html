@@ -1593,15 +1593,18 @@ table { max-width:100%; }
 canvas { max-width:100%; }
 @media(max-width:799px) {
   .audit-controls { margin:8px;padding:12px; }
-  .grid,.grid-2,.layout,.main-grid,.kpi-row,.metrics-row { grid-template-columns:minmax(0,1fr)!important; }
-  .card,.panel { min-width:0; }
+  .grid,.grid-2,.layout,.layout-12,.layout-2,.layout-3,.main-grid,.kpi-row,.metrics-row { grid-template-columns:minmax(0,1fr)!important; }
+  .card,.panel,.col { min-width:0;max-width:100%; }
+  .state-row { grid-template-columns:minmax(0,90px) minmax(0,1fr) 60px; }
+  .audit-controls details { flex-basis:100%;min-width:0;max-width:100%; }
+  .audit-controls textarea { box-sizing:border-box; }
   .tab-bar,.tabs,.nav-tabs { overflow-x:auto; }
   .matrix-table { overflow-x:auto;max-width:100%; }
 }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important;transition:none!important;scroll-behavior:auto!important; } }
 
 </style>
-<meta name="markov-build" content="2026-10-03-r2">
+<meta name="markov-build" content="2026-10-03-r3">
 </head>
 
 <body>
@@ -1938,7 +1941,7 @@ canvas { max-width:100%; }
             <div class="kpi-sub">Verdadero vs. estimado</div>
           </div>
           <div class="kpi k-blue">
-            <div class="kpi-label">P(dep→rec) media</div>
+            <div class="kpi-label">P(origen 0 → último estado)</div>
             <div class="kpi-value" id="kv-pmean">—</div>
             <div class="kpi-sub">Poblacional</div>
           </div>
@@ -1950,7 +1953,7 @@ canvas { max-width:100%; }
         </div>
         <div class="card">
           <div class="card-head"><span class="pip" style="background:var(--teal)"></span>Verdadero vs. Estimado
-            P(dep→rec)</div>
+            P(próximo último estado)</div>
           <div class="chart-wrap tall"><canvas id="c-hier-scatter"></canvas></div>
           <div id="desc-hier-scatter" class="interp-panel" style="display:none; margin-top:10px;"></div>
         </div>
@@ -2047,7 +2050,7 @@ canvas { max-width:100%; }
             <div class="kpi-sub">Peso del prior</div>
           </div>
           <div class="kpi k-green">
-            <div class="kpi-label">P(dep→rec)</div>
+            <div class="kpi-label">P(próximo último estado)</div>
             <div class="kpi-value" id="kv-prec">—</div>
             <div class="kpi-sub">Nuevo paciente</div>
           </div>
@@ -2591,7 +2594,7 @@ canvas { max-width:100%; }
   </div>
   </div>
 
-  <footer>Cadenas No Homogéneas · Enfoque Bayesiano v2.0 — Basado en MATLAB R2019a · Sesión 11</footer>
+  <footer>Cadenas No Homogéneas · Enfoque Bayesiano v3.1 — Basado en MATLAB R2019a · Sesión 11</footer>
 
   <script>
 /* ═══ NÚCLEO VALIDADO · v3.1 · incrustado en cada HTML autónomo ═══ */
@@ -2691,7 +2694,7 @@ function auditRandom(){auditSeedState=(auditSeedState+0x6D2B79F5)>>>0;let t=audi
 function gammaLog(z){const co=[676.5203681218851,-1259.1392167224028,771.3234287776531,-176.6150291621406,12.507343278686905,-.1385710952657201,9.984369578019572e-6,1.505632735149312e-7];if(z<.5)return Math.log(Math.PI)-Math.log(Math.sin(Math.PI*z))-gammaLog(1-z);z--;let x=.9999999999998099;co.forEach((v,i)=>x+=v/(z+i+1));const t=z+7.5;return .5*Math.log(2*Math.PI)+(z+.5)*Math.log(t)-t+Math.log(x);}
 function chiSquareSurvival(x,df){if(x===Infinity)return 0;if(!Number.isFinite(x)||x<0||df<=0)return null;if(x===0)return 1;const a=df/2,z=x/2,scale=Math.exp(-z+a*Math.log(z)-gammaLog(a));if(z<a+1){let sum=1/a,term=sum;for(let k=1;k<10000;k++){term*=z/(a+k);sum+=term;if(Math.abs(term)<Math.abs(sum)*1e-14)break;}return Math.max(0,Math.min(1,1-scale*sum));}let b=z+1-a,c=1e300,d=1/b,h=d;for(let i=1;i<10000;i++){const an=-i*(i-a);b+=2;d=an*d+b;if(Math.abs(d)<1e-300)d=1e-300;c=b+an/c;if(Math.abs(c)<1e-300)c=1e-300;d=1/d;const delta=d*c;h*=delta;if(Math.abs(delta-1)<1e-14)break;}return Math.max(0,Math.min(1,scale*h));}
 function groupedChiSquare(obs,expected,estimatedParams=0){if(obs.length!==expected.length||obs.some(v=>!Number.isFinite(v)||v<0)||expected.some(v=>!Number.isFinite(v)||v<0))throw new Error('Conteos inválidos para χ².');let groups=[],o=0,e=0;obs.forEach((v,i)=>{if(expected[i]===0&&v>0){groups.push([v,0]);return;}o+=v;e+=expected[i];if(e>=5){groups.push([o,e]);o=0;e=0;}});if(e>0||o>0){if(groups.length){groups.at(-1)[0]+=o;groups.at(-1)[1]+=e;}else groups.push([o,e]);}const df=groups.length-1-estimatedParams;const stat=groups.reduce((s,[a,b])=>s+(b===0?(a>0?Infinity:0):(a-b)**2/b),0);return {stat,df:Math.max(0,df),pv:df>0&&groups.every(g=>g[1]>=5)?chiSquareSurvival(stat,df):null,groups};}
-function downloadAuditText(filename,text){const controls=document.querySelector('.audit-controls');let preview=document.getElementById('audit-preview');if(!preview){const box=document.createElement('details');box.open=true;const summary=document.createElement('summary');summary.textContent='Resumen exportable: seleccione y copie si su navegador bloquea la descarga';preview=document.createElement('textarea');preview.id='audit-preview';preview.readOnly=true;preview.rows=12;preview.style.width='100%';preview.setAttribute('aria-label','Resumen exportable');box.append(summary,preview);controls.appendChild(box);}preview.value=text;const blob=new Blob([text],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
+function downloadAuditText(filename,text){const controls=document.querySelector('.audit-controls');let preview=document.getElementById('audit-preview');if(!preview){const box=document.createElement('details');box.open=true;const summary=document.createElement('summary');summary.textContent='Resumen exportable: seleccione y copie si su navegador bloquea la descarga';preview=document.createElement('textarea');preview.id='audit-preview';preview.readOnly=true;preview.rows=12;preview.style.width='100%';preview.setAttribute('aria-label','Resumen exportable');box.append(summary,preview);controls.appendChild(box);}preview.value=text;const oldLink=document.getElementById('audit-download-link');if(oldLink){URL.revokeObjectURL(oldLink.href);oldLink.remove();}const blob=new Blob([text],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.id='audit-download-link';a.textContent='Descargar archivo exportado';preview.parentElement.appendChild(a);a.click();}
 function reportUserError(error){const el=document.getElementById('audit-status');if(el){el.textContent=error.message||String(error);el.setAttribute('role','alert');}else alert(error.message||String(error));}
 function updateAccessibleCharts(){if(!window.Chart?.getChart)return;for(const canvas of document.querySelectorAll('canvas')){const chart=Chart.getChart(canvas);if(!chart?.data)continue;let details=document.getElementById('audit-table-'+canvas.id);if(!details){details=document.createElement('details');details.id='audit-table-'+canvas.id;details.className='audit-chart-table';canvas.insertAdjacentElement('afterend',details);}const labels=chart.data.labels||[],datasets=chart.data.datasets||[],n=Math.max(labels.length,...datasets.map(d=>d.data?.length||0));details.innerHTML='<summary>Consultar datos del gráfico en tabla</summary><div style="overflow:auto"><table><thead><tr><th scope="col">Observación</th>'+datasets.map(d=>'<th scope="col">'+escapeHTML(d.label||'Serie')+'</th>').join('')+'</tr></thead><tbody>'+Array.from({length:n},(_,i)=>'<tr><th scope="row">'+escapeHTML(labels[i]??i)+'</th>'+datasets.map(d=>{const v=d.data?.[i],text=v&&typeof v==='object'?Object.entries(v).map(([k,x])=>k+': '+x).join(', '):v??'—';return '<td>'+escapeHTML(text)+'</td>';}).join('')+'</tr>').join('')+'</tbody></table></div>';}}
 function runComputeWorker(entry,job,functions){return new Promise((resolve,reject)=>{const code='let auditSeedState=42;\n'+functions.map(f=>f.toString()).join('\n')+'\nonmessage=e=>{try{postMessage({result:'+entry+'(e.data,p=>postMessage({progress:p}))});}catch(e){postMessage({error:e.message});}}',url=URL.createObjectURL(new Blob([code],{type:'text/javascript'})),worker=new Worker(url),button=document.createElement('button');button.textContent='Cancelar cálculo';button.type='button';document.querySelector('.audit-controls').appendChild(button);const clean=()=>{worker.terminate();URL.revokeObjectURL(url);button.remove();};button.onclick=()=>{clean();reject(new Error('Cálculo cancelado.'));};worker.onmessage=e=>{if(e.data.progress!==undefined)document.getElementById('audit-status').textContent='Ajuste: '+Math.round(e.data.progress*100)+'%';if(e.data.error){clean();reject(new Error(e.data.error));}if(e.data.result){clean();resolve(e.data.result);}};worker.onerror=e=>{clean();reject(new Error(e.message||'Error al calcular.'));};worker.postMessage(job);});}
@@ -2699,12 +2702,13 @@ function initializeAuditUI(runNames=[]) {
   const controls=document.createElement('section');controls.className='audit-controls';controls.setAttribute('aria-label','Reproducibilidad y exportación');
   controls.innerHTML='<label for="audit-seed">Semilla de simulación</label><input id="audit-seed" type="number" min="0" max="4294967295" step="1" value="42"><button type="button" id="audit-export">Descargar resultados y configuración</button><p id="audit-status" role="status" aria-live="polite">Versión 3.1 · Los resultados son probabilísticos y educativos; no constituyen diagnóstico ni reemplazan el juicio profesional.</p>';
   const header=document.querySelector('header');(header||document.body).insertAdjacentElement(header?'afterend':'afterbegin',controls);
-  document.getElementById('audit-export').onclick=()=>{const inputs=Array.from(document.querySelectorAll('input,select,textarea')).map(e=>(e.getAttribute('aria-label')||e.id||e.name||e.type)+': '+e.value).join('\n');const text=document.body.innerText||document.body.textContent;downloadAuditText(document.title.replace(/[^\p{L}\p{N}_-]/gu,'_')+'.txt','Versión 3.1\n'+inputs+'\n\n'+text);};
+  document.getElementById('audit-export').onclick=()=>{const inputs=Array.from(document.querySelectorAll('input,select,textarea')).filter(e=>e.id!=='audit-preview').map(e=>(e.getAttribute('aria-label')||e.id||e.name||e.type)+': '+e.value).join('\n');const text=document.body.innerText||document.body.textContent;downloadAuditText(document.title.replace(/[^\p{L}\p{N}_-]/gu,'_')+'.txt','Versión 3.1\n'+inputs+'\n\n'+text);};
   for(const name of runNames){const original=window[name];if(typeof original!=='function')continue;window[name]=function(...args){try{setSimulationSeed(Number(document.getElementById('audit-seed').value));for(const e of document.querySelectorAll('input[type="number"],input[type="range"]'))if(!e.disabled&&e.offsetParent!==null&&(!e.value.trim()||!Number.isFinite(Number(e.value))||(e.min!==''&&Number(e.value)<Number(e.min))||(e.max!==''&&Number(e.value)>Number(e.max))))throw new Error('Revise el campo '+(e.getAttribute('aria-label')||e.id)+': el valor está fuera de su rango.');const status=document.getElementById('audit-status');status.setAttribute('role','status');status.textContent='Cálculo solicitado. Resultados educativos y condicionales al modelo.';const result=original.apply(this,args);if(result&&typeof result.catch==='function')return result.then(value=>{updateAccessibleCharts();return value;}).catch(reportUserError);updateAccessibleCharts();return result;}catch(e){reportUserError(e);}};}
   const labelFields=()=>{for(const e of document.querySelectorAll('input,select,textarea')){if(e.getAttribute('aria-label')||e.labels?.length)continue;const match=(e.id||'').match(/^(.+?)[_-](\d+)[_-](\d+)$/);e.setAttribute('aria-label',match?match[1]+': origen '+(Number(match[2])+1)+', destino '+(Number(match[3])+1):e.placeholder||e.previousElementSibling?.textContent?.trim()||e.id||'Valor configurable');}};
   labelFields();new MutationObserver(labelFields).observe(document.body,{childList:true,subtree:true});
   for(const chartClass of ['Chart']){const C=window[chartClass];if(C?.defaults){C.defaults.interaction.mode='index';C.defaults.interaction.intersect=false;C.defaults.plugins.tooltip.callbacks.label=ctx=>' '+ctx.dataset.label+': '+Number(ctx.parsed.y??ctx.parsed).toFixed(4);}}
 }
+
 
 
     /* ═══════════════════════════════════════════════════════════
@@ -2767,23 +2771,7 @@ const N = parseInt(document.getElementById('sl-nstates').value); const newS = []
     function interpolateMatrix(P1, P2, f) { const n = P1.length, R = []; for (let i = 0; i < n; i++) { R[i] = []; for (let j = 0; j < n; j++)R[i][j] = (1 - f) * P1[i][j] + f * P2[i][j] } for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < n; j++)s += R[i][j]; if (s > 0) for (let j = 0; j < n; j++)R[i][j] /= s } return R }
     /* Exponencial matricial por Serie de Taylor orden 4 con scaling-and-squaring (Moler & Van Loan, 2003) */
     function matMul(A, B) { const n = A.length, m = A[0].length, p = B[0].length, C = Array.from({ length: n }, () => Array(p).fill(0)); for (let i = 0; i < n; i++) for (let j = 0; j < p; j++) for (let k = 0; k < m; k++) C[i][j] += A[i][k] * B[k][j]; return C; }
-    function matExpTaylor(Q, dt) {
-      const n = Q.length;
-      // Scaling: si ||Q*dt|| > 0.5, dividir dt por 2^s hasta ||Q*dt/2^s|| <= 0.5
-      let norm = 0; for (let r = 0; r < n; r++) { let rs = 0; for (let c = 0; c < n; c++) rs += Math.abs(Q[r][c]); norm = Math.max(norm, rs); }
-      let s = 0; let dtS = dt * norm;
-      while (dtS > 0.5) { s++; dtS /= 2; }
-      const dtR = dt / Math.pow(2, s);
-      const I = Array.from({ length: n }, (_, r) => Array.from({ length: n }, (_, c) => r === c ? 1 : 0));
-      const Qd = Array.from({ length: n }, (_, r) => Array.from({ length: n }, (_, c) => Q[r][c] * dtR));
-      const Q2 = matMul(Qd, Qd), Q3 = matMul(Q2, Qd), Q4 = matMul(Q3, Qd);
-      let P = Array.from({ length: n }, (_, r) => Array.from({ length: n }, (_, c) => I[r][c] + Qd[r][c] + Q2[r][c] / 2 + Q3[r][c] / 6 + Q4[r][c] / 24));
-      // Squaring: P = P^(2^s)
-      for (let sq = 0; sq < s; sq++) P = matMul(P, P);
-      // Normalización: forzar no-negatividad y filas sumen 1
-      for (let r = 0; r < n; r++) { for (let c = 0; c < n; c++) P[r][c] = Math.max(0, P[r][c]); const rs = P[r].reduce((a, b) => a + b, 0); if (rs > 0) for (let c = 0; c < n; c++) P[r][c] /= rs; else P[r][r] = 1; }
-      return P;
-    }
+    function matExpTaylor(Q,dt){const n=Q.length;if(!n||!Number.isFinite(dt)||dt<0||Q.some((row,i)=>row.length!==n||row.some((v,j)=>!Number.isFinite(v)||(i!==j&&v<0))||Math.abs(row.reduce((a,b)=>a+b,0))>1e-8))throw new Error('Generador CTMC inválido: tasas finitas no negativas fuera de la diagonal, filas de suma cero y tiempo no negativo requeridos.');const norm=Math.max(...Q.map(row=>row.reduce((a,b)=>a+Math.abs(b),0))),scale=Math.max(0,Math.ceil(Math.log2(Math.max(1,norm*dt/.5)))),h=dt/2**scale,I=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1:0));let term=I.map(r=>r.slice()),P=I.map(r=>r.slice());for(let k=1;k<=40;k++){term=matMul(term,Q).map(row=>row.map(v=>v*h/k));P=P.map((row,i)=>row.map((v,j)=>v+term[i][j]));if(Math.max(...term.flat().map(Math.abs))<1e-16)break;}for(let k=0;k<scale;k++)P=matMul(P,P);return P.map(row=>{if(row.some(v=>!Number.isFinite(v)||v< -1e-10))throw new Error('Exponencial CTMC con error numérico excesivo.');const clean=row.map(v=>Math.max(0,v)),sum=clean.reduce((a,b)=>a+b,0);if(Math.abs(sum-1)>1e-8)throw new Error('Exponencial CTMC no conserva masa.');return clean.map(v=>v/sum);});}
     /* CDF Normal Estándar — Abramowitz & Stegun 26.2.17 (max error 7.5e-8) */
     function stdNormalCDF(z) { const za = Math.abs(z), t = 1 / (1 + 0.2316419 * za), p = 1 - 0.39894228 * Math.exp(-za * za / 2) * t * (t * (t * (t * (t * 1.330274429 - 1.821255978) + 1.781477937) - 0.356563782) + 0.319381530); return z >= 0 ? p : 1 - p; }
     function discreteRandom(probs) { const r = auditRandom() * probs.reduce((a, b) => a + b, 0); let c = 0; for (let i = 0; i < probs.length; i++) { c += probs[i]; if (r < c) return i } return probs.length - 1 }
@@ -2831,11 +2819,8 @@ const N = parseInt(document.getElementById('sl-nstates').value); const newS = []
       results.forEach((r, i) => { h += `<tr class="${i === 0 ? 'mc-best' : ''}"><td>${r.label}</td><td class="mono">${r.k}</td><td class="mono">${r.ll.toFixed(1)}</td><td class="mono">${r.aic.toFixed(1)}</td><td class="mono">${r.bic.toFixed(1)}</td><td class="mono">${i === 0 ? '0' : '+' + (r.aic - best.aic).toFixed(1)}</td></tr>`; });
       h += '</tbody></table>';
       const dAIC2 = results.length > 1 ? results[1].aic - best.aic : 0;
-      h += `<div class="mc-delta">ΔAIC del segundo: <strong>${dAIC2.toFixed(1)}</strong> — ${dAIC2 > 10 ? 'diferencia sustancial' : dAIC2 > 4 ? 'evidencia considerable' : dAIC2 > 2 ? 'evidencia moderada' : 'modelos equivalentes'}.</div>`;
-      if (doVuong && results.length >= 2 && results[0].individual && results[1].individual) {
-        const v = vuongTest(results[0].individual, results[1].individual);
-        h += `<div class="vuong-result ${v.signif ? 'vuong-signif' : 'vuong-nosignif'}"><strong>Test de Vuong:</strong> z=${v.z.toFixed(3)}, p=${v.p.toFixed(3)}. ${v.signif ? `Diferencia <strong>significativa</strong>: ${results[0].label} es superior.` : 'Diferencia <strong>no significativa</strong>: modelos comparables.'}</div>`;
-      }
+      h += `<div class="mc-delta">ΔAIC del segundo: <strong>${dAIC2.toFixed(1)}</strong> — ${dAIC2 > 10 ? 'diferencia sustancial' : dAIC2 > 4 ? 'evidencia considerable' : dAIC2 > 2 ? 'evidencia moderada' : 'diferencia pequeña; no demuestra equivalencia'}.</div>`;
+      if(doVuong)h+='<p>Comparación exploratoria. No se calcula un p-valor de Vuong sobre transiciones dependientes; las diferencias no demuestran superioridad ni equivalencia.</p>';
       el.innerHTML = h;
     }
     function computeLogLikelihoodNH(traj, Pb, Pt, modelType, midp, krate, Tmax) {
@@ -3225,149 +3210,9 @@ const N = parseInt(document.getElementById('sl-nstates').value); const newS = []
             the exponential distribution. JASA, 64(325), 387–389.
        ═══════════════════════════════════════════════════════════════════ */
 
-    function ksExpTest(times) {
-      /* KS test contra Exp(λ̂=1/media) con parámetros estimados (Lilliefors)
-         Devuelve: { D, p, n, mean, sd, cv } */
-      const n = times.length;
-      if (n < 4) return null;
-      const sorted = [...times].sort((a, b) => a - b);
-      const mean   = sorted.reduce((a, b) => a + b, 0) / n;
-      const lambda = 1 / mean;
-      const variance = sorted.reduce((a, x) => a + (x - mean) ** 2, 0) / n;
-      const sd = Math.sqrt(variance);
-      const cv = mean > 0 ? sd / mean : NaN;
+    function ksExpTest(times){if(times.length<4||times.some(v=>!Number.isFinite(v)||v<=0))throw new Error('Se requieren al menos cuatro duraciones positivas.');const n=times.length,mean=times.reduce((a,b)=>a+b,0)/n,lambda=1/mean,sd=Math.sqrt(times.reduce((a,v)=>a+(v-mean)**2,0)/(n-1));const distance=values=>{const sorted=values.slice().sort((a,b)=>a-b),rate=n/values.reduce((a,b)=>a+b,0);return sorted.reduce((d,x,i)=>Math.max(d,Math.abs((i+1)/n-(1-Math.exp(-rate*x))),Math.abs(i/n-(1-Math.exp(-rate*x)))),0);};const D=distance(times);let extreme=0;const B=499;for(let b=0;b<B;b++){const simulated=Array.from({length:n},()=>-Math.log(Math.max(1e-15,1-auditRandom()))/lambda);if(distance(simulated)>=D)extreme++;}return {D,p:(extreme+1)/(B+1),n,mean,sd,cv:sd/mean,lambda,replicates:B};}
 
-      // D = max |F_n(x) - F(x)|
-      let D = 0;
-      sorted.forEach((x, idx) => {
-        const Fn_above = (idx + 1) / n;           // F_n justo después de x
-        const Fn_below = idx / n;                  // F_n justo antes de x
-        const Ft = 1 - Math.exp(-lambda * x);     // CDF teórica
-        D = Math.max(D, Math.abs(Fn_above - Ft), Math.abs(Fn_below - Ft));
-      });
-
-      // P-valor aproximado (Kolmogorov, 1933) — conservador cuando λ es estimado
-      // P ≈ 2 Σ_{k=1}^∞ (-1)^{k+1} exp(-2k²z²), z = D·(√n + 0.12 + 0.11/√n)
-      const z = D * (Math.sqrt(n) + 0.12 + 0.11 / Math.sqrt(n));
-      let pVal = 0;
-      for (let k = 1; k <= 100; k++) {
-        const term = (k % 2 === 1 ? 1 : -1) * Math.exp(-2 * k * k * z * z);
-        pVal += term;
-        if (Math.abs(term) < 1e-10) break;
-      }
-      pVal = Math.min(1, Math.max(0, 2 * pVal));
-
-      return { D, p: pVal, n, mean, sd, cv, lambda };
-    }
-
-    function renderExponentialityTest(sojournTimes, allStateNames, nClinical) {
-      const card    = document.getElementById('exp-ctmc-card');
-      const badge   = document.getElementById('exp-ctmc-badge');
-      const container = document.getElementById('exp-ctmc-result');
-      card.style.display = 'block';
-
-      // Solo estados clínicos (no absorbentes)
-      const results = [];
-      for (let i = 0; i < nClinical; i++) {
-        const ts = sojournTimes[i];
-        if (!ts || ts.length < 4) {
-          results.push({ state: allStateNames[i], idx: i, insufficient: true, n: ts ? ts.length : 0 });
-          continue;
-        }
-        const ks = ksExpTest(ts);
-        results.push({ state: allStateNames[i], idx: i, insufficient: false, ...ks });
-      }
-
-      const valid = results.filter(r => !r.insufficient);
-      const anyFail = valid.some(r => r.p < 0.05);
-      const anyWarn = valid.some(r => r.p < 0.10);
-      const cvFail  = valid.some(r => Math.abs(r.cv - 1) > 0.4); // CV muy alejado de 1
-
-      const globalOk = !anyFail && !cvFail;
-      badge.className = globalOk && !anyWarn ? 'ck-badge ck-pass'
-                       : globalOk            ? 'ck-badge ck-warn'
-                                             : 'ck-badge ck-fail';
-      badge.textContent = globalOk && !anyWarn ? '✓ Exponencialidad sostenida'
-                         : globalOk            ? '⚠ Evidencia marginal'
-                                               : '✗ Tiempos no exponenciales';
-
-      let html = `
-        <p style="font-size:10.5px;color:var(--t3);margin:0 0 8px 0">
-          La CTMC asume que el tiempo de permanencia en cada estado sigue una distribución 
-          <strong>Exponencial(λ)</strong>, equivalente a ausencia de memoria sobre la duración de la estancia.
-          Se aplican dos criterios por estado: el <strong>Coeficiente de Variación (CV)</strong> 
-          — debe ser ≈ 1 para una exponencial — y el <strong>test KS</strong> contra Exp(λ̂).
-        </p>
-        <div class="ck-legend">
-          <span><span class="ck-dot" style="background:var(--green)"></span>p ≥ 0.10 y CV ≈ 1 — exponencial adecuada</span>
-          <span><span class="ck-dot" style="background:var(--amber)"></span>evidencia marginal</span>
-          <span><span class="ck-dot" style="background:var(--rose)"></span>p < 0.05 o CV muy alejado de 1</span>
-        </div>
-        <div class="ck-section-title">Test KS de Lilliefors y Coeficiente de Variación por estado</div>
-        <table class="ck-row-table">
-          <thead><tr>
-            <th>Estado</th><th>n</th><th>Media</th><th>SD</th>
-            <th>CV (≈1?)</th><th>D (KS)</th><th>p-valor †</th><th>Diagnóstico</th>
-          </tr></thead><tbody>`;
-
-      results.forEach(r => {
-        if (r.insufficient) {
-          html += `<tr>
-            <td><strong style="color:${COLORS[r.idx]}">${r.state}</strong></td>
-            <td class="mono" colspan="7" style="color:var(--t3)">
-              Insuficiente (n = ${r.n}; se necesitan ≥ 4 tiempos de permanencia)
-            </td></tr>`;
-          return;
-        }
-        const cvOk    = Math.abs(r.cv - 1) <= 0.3;
-        const cvWarn  = Math.abs(r.cv - 1) <= 0.5 && !cvOk;
-        const cvClass = cvOk ? 'ck-pval-ok' : cvWarn ? 'ck-pval-warn' : 'ck-pval-fail';
-        const pClass  = r.p >= 0.10 ? 'ck-pval-ok' : r.p >= 0.05 ? 'ck-pval-warn' : 'ck-pval-fail';
-        const stateFail = r.p < 0.05 || Math.abs(r.cv - 1) > 0.4;
-        const stateWarn = !stateFail && (r.p < 0.10 || Math.abs(r.cv - 1) > 0.25);
-        const diag = stateFail
-          ? `<span class="ck-badge ck-fail" style="margin:0">No exponencial</span>`
-          : stateWarn
-          ? `<span class="ck-badge ck-warn" style="margin:0">Marginal</span>`
-          : `<span class="ck-badge ck-pass" style="margin:0">OK</span>`;
-        html += `<tr>
-          <td><strong style="color:${COLORS[r.idx]}">${r.state}</strong></td>
-          <td class="mono">${r.n}</td>
-          <td class="mono">${r.mean.toFixed(3)}</td>
-          <td class="mono">${r.sd.toFixed(3)}</td>
-          <td class="mono ${cvClass}">${r.cv.toFixed(3)}</td>
-          <td class="mono">${r.D.toFixed(4)}</td>
-          <td class="mono ${pClass}">${r.p < 0.001 ? '< 0.001' : r.p.toFixed(3)}</td>
-          <td>${diag}</td>
-        </tr>`;
-      });
-
-      html += `</tbody></table>
-        <p style="font-size:10px;color:var(--t3);margin:4px 0 10px 0">
-          † Test KS con parámetros estimados del mismo sample: p-valores conservadores (Lilliefors, 1969). 
-          Un p ≈ 0.10 con parámetros estimados equivale aproximadamente a p ≈ 0.05 en un test con parámetros conocidos.
-        </p>`;
-
-      // Interpretación global
-      const nonExpStates = valid.filter(r => r.p < 0.05 || Math.abs(r.cv - 1) > 0.4).map(r => r.state);
-      const mainMsg = globalOk
-        ? `Los tiempos de permanencia son <strong>compatibles con la distribución exponencial</strong> en todos los estados evaluados. La asunción central de la CTMC (ausencia de memoria sobre la duración de la estancia) está respaldada por los datos.`
-        : `Se detecta <strong>desviación de la exponencialidad</strong> en: <strong>${nonExpStates.join(', ')}</strong>. Esto indica que el tiempo que el paciente lleva en ese estado <em>sí influye</em> en la probabilidad de salir, violando la asunción de la CTMC.`;
-      const implication = globalOk
-        ? `Las tasas de transición Q estimadas son válidas y las predicciones del modelo son confiables.`
-        : `Considere un modelo <em>semi-Markoviano</em> (Weiss & Zelen, 1965) que permita distribuciones de permanencia más flexibles (Weibull, Gamma). Las tasas Q y los tiempos de absorción estimados deben interpretarse con precaución para los estados afectados.`;
-
-      html += `<div class="ck-interp">
-        <p>${mainMsg}</p>
-        <p style="margin-top:6px">⚕️ <em>Implicación clínica:</em> ${implication}</p>
-        <p style="margin-top:8px;font-size:10.5px;color:var(--t3)">
-          Ref: Weiss, G.H., & Zelen, M. (1965). <em>J. Appl. Prob.</em>, 2(2), 269–285. ·
-          Lilliefors, H.W. (1969). <em>JASA</em>, 64(325), 387–389.
-        </p>
-      </div>`;
-
-      container.innerHTML = html;
-    }
+    function renderExponentialityTest(sojournTimes,allStateNames,nClinical){const card=document.getElementById('exp-ctmc-card'),badge=document.getElementById('exp-ctmc-badge'),container=document.getElementById('exp-ctmc-result');card.style.display='block';const results=Array.from({length:nClinical},(_,i)=>{const times=sojournTimes[i]||[];return {state:allStateNames[i],n:times.length,...(times.length>=4?ksExpTest(times):{insufficient:true})};}),valid=results.filter(r=>!r.insufficient),reject=valid.some(r=>r.p<.05);badge.className='ck-badge '+(reject?'ck-fail':'ck-warn');badge.textContent=valid.length===0?'Datos insuficientes para evaluar':reject?'Discrepancia con el modelo exponencial':valid.length<nClinical?'Evaluación parcial; faltan datos':'No se rechaza; no demuestra adecuación';container.innerHTML='<p>Contraste KS exploratorio con 499 réplicas de bootstrap paramétrico. La tasa se reestima en cada réplica. CV es descriptivo; no se utiliza como prueba independiente. No incluye corrección por comparaciones múltiples.</p><div style="overflow:auto"><table><thead><tr><th>Estado</th><th>n</th><th>Media</th><th>CV</th><th>D</th><th>p bootstrap</th></tr></thead><tbody>'+results.map(r=>'<tr><td>'+escapeHTML(r.state)+'</td><td>'+r.n+'</td>'+(r.insufficient?'<td colspan="4">Insuficiente: mínimo 4 duraciones; muestras pequeñas tienen poca potencia.</td>':'<td>'+r.mean.toFixed(3)+'</td><td>'+r.cv.toFixed(3)+'</td><td>'+r.D.toFixed(4)+'</td><td>'+r.p.toFixed(3)+'</td>')+'</tr>').join('')+'</tbody></table></div><p>Una ausencia de rechazo no acredita la propiedad de falta de memoria ni la validez de las tasas. La CTMC temporal no homogénea puede tener tasas que cambian durante una estancia y tiempos no exponenciales. Este contraste sólo corresponde al caso de tasas constantes y requiere duraciones completas; la censura y la dependencia entre registros exigen métodos específicos.</p>';}
 
     function renderRafteryHier(sequences) {
       /* Modelo jerárquico = cadena de Markov homogénea por paciente.
@@ -3603,7 +3448,7 @@ const N = parseInt(document.getElementById('sl-nstates').value); const newS = []
       let ciText = ciLo ? `<div class="ibox-divider"></div><div class="iblock"><div class="iblock-title">📐 Rango de Incertidumbre (IC 95%)</div><p>Gracias al remuestreo <em>bootstrap</em>, podemos estimar que la verdadera proporción de pacientes en el estado de <strong>${escapeHTML(STATES[STATES.length - 1])}</strong> al final del seguimiento probablemente se encuentra entre <strong>${(ciLo[Tmax][STATES.length - 1] * 100).toFixed(1)}%</strong> y <strong>${(ciHi[Tmax][STATES.length - 1] * 100).toFixed(1)}%</strong>.</p></div>` : '';
       document.getElementById('ibox-nohom').innerHTML='<h4>Lectura condicional del modelo temporal</h4><p>Modelo: '+escapeHTML(mN)+'. Horizonte: '+Tmax+' unidades. Ocupación final de '+escapeHTML(STATES.at(-1))+': '+(prop[Tmax].at(-1)*100).toFixed(1)+'%.</p><p>Diferencia frente al escenario basal: '+delta.toFixed(1)+' puntos porcentuales. Se comparan escenarios configurados; esta diferencia no identifica eficacia ni un efecto causal observado.</p>'+ciText;
       document.getElementById('desc-nohom-evol').style.display = 'block'; document.getElementById('desc-nohom-evol').innerHTML = `<h4>📊 Evolución Poblacional</h4><p>Muestra cómo se distribuye la proporción poblacional en cada estado a lo largo de <strong>${Tmax} unidades de tiempo</strong>. Con el modelo <strong>${mN}</strong>${model === 'sigmoid' ? `, el cambio crítico ocurre alrededor de la U.T. <strong>${inflW}</strong>` : ''}, alcanzando un ${(prop[Tmax][STATES.length - 1] * 100).toFixed(1)}% de recuperación.${ciLo ? ' <em>Las bandas discontinuas muestran IC 95% bootstrap (percentiles de las réplicas, sin forzar cobertura del valor observado).</em>' : ''}</p>`;
-      document.getElementById('desc-nohom-comp').style.display = 'block'; document.getElementById('desc-nohom-comp').innerHTML = `<h4>📊 Comparación: Tratamiento vs. Sin Tratamiento (P_base)</h4><p>La curva <strong>continua</strong> refleja el modelo no homogéneo con efecto temporal del tratamiento. La curva <strong>discontinua gris</strong> es el escenario contrafactual: si las probabilidades hubieran permanecido en P_base (línea basal sin tratamiento) durante todo el seguimiento. Diferencia de diferencia simulada al final: <strong>${Math.abs(delta).toFixed(1)} pp</strong>.${ciLo ? ' El área sombreada muestra IC 95% bootstrap.' : ''}</p>`;
+      document.getElementById('desc-nohom-comp').style.display = 'block'; document.getElementById('desc-nohom-comp').innerHTML = `<h4>📊 Comparación de escenarios temporales y matriz basal</h4><p>La curva <strong>continua</strong> refleja el modelo no homogéneo con efecto temporal del tratamiento. La curva <strong>discontinua gris</strong> es un escenario basal configurado: si las probabilidades hubieran permanecido en P_base (línea basal sin tratamiento) durante todo el seguimiento. Diferencia de diferencia simulada al final: <strong>${Math.abs(delta).toFixed(1)} pp</strong>.${ciLo ? ' El área sombreada muestra IC 95% bootstrap.' : ''}</p>`;
     }
 
     /* ═══ EJEMPLOS ALEATORIOS (varían en cada llamada) ═══ */
@@ -4119,12 +3964,12 @@ function showHier(tR,eR,src,posterior){const pairs=tR.map((x,i)=>({x,y:eR[i]})).
       const models = [{ name: 'linear', label: 'Lineal', efn: t => Math.max(0, Math.min(1, (t - t0) / ramp)), k: 1 }, { name: 'sigmoid', label: 'Sigmoide', efn: t => sigmoid(t, t0 + ramp / 2, 0.3), k: 2 }, { name: 'exponential', label: 'Exponencial', efn: t => t < t0 ? 0 : 1 - Math.exp(-0.2 * (t - t0)), k: 1 }];
       const results = models.map(m => {
         let ll = 0, nTr = 0; const ind = [];
-        for (let i = 1; i < st.length; i++) { if (st[i - 1] >= M || st[i] >= M) continue; const t = tV[i - 1], f = m.efn(t); const Qi = Array.from({ length: nS }, () => Array(nS).fill(0)); for (let r = 0; r < nS; r++) for (let c = 0; c < nS; c++) Qi[r][c] = Qb[r][c] + f * Qt2[r][c]; for (let r = 0; r < M; r++) { let s = 0; for (let c = 0; c < nS; c++)if (c !== r) s += Qi[r][c]; Qi[r][r] = -Math.abs(s); } const Pd = matExpTaylor(Qi, dt); const p = Pd[st[i - 1]][st[i]]; const pVal = Math.log(Math.max(p, 1e-300)); ll += pVal; ind.push(pVal); nTr++; }
+        for (let i = 1; i < st.length; i++) { if (st[i - 1] >= M) continue; const t = tV[i - 1], f = m.efn(t); const Qi = Array.from({ length: nS }, () => Array(nS).fill(0)); for (let r = 0; r < nS; r++) for (let c = 0; c < nS; c++) Qi[r][c] = Qb[r][c] + f * Qt2[r][c]; for (let r = 0; r < M; r++) { let s = 0; for (let c = 0; c < nS; c++)if (c !== r) s += Qi[r][c]; Qi[r][r] = -Math.abs(s); } const Pd = matExpTaylor(Qi, dt); const p = Pd[st[i - 1]][st[i]]; const pVal = Math.log(Math.max(p, 1e-300)); ll += pVal; ind.push(pVal); nTr++; }
         return { model: m.name, label: m.label, ll, n: nTr, individual: ind, k: m.k, aic: computeAIC(ll, m.k), bic: computeBIC(ll, m.k, nTr) };
       });
-      results.sort((a, b) => a.aic - b.aic);
+      results.sort((a,b)=>b.ll-a.ll);
       document.getElementById('mc-ctmc-card').style.display = 'block';
-      renderModelComparison('mc-ctmc', results, true);
+      document.getElementById('mc-ctmc').innerHTML='<p>Comparación descriptiva de tasas configuradas, sin estimación de parámetros ni selección inferencial.</p><table class="mc-table"><thead><tr><th>Escenario</th><th>Log-L de la trayectoria</th></tr></thead><tbody>'+results.map(r=>'<tr><td>'+escapeHTML(r.label)+'</td><td>'+r.ll.toFixed(3)+'</td></tr>').join('')+'</tbody></table><p>Las permanencias consecutivas pertenecen a una misma trayectoria dependiente. No se informa un p-valor de Vuong ni se declara superioridad; una trayectoria con pocos cambios puede aportar información insuficiente.</p>';
       return results;
     }
     function runCTMC() {

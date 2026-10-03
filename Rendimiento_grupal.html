@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Markov · Predictor de Desempeño Grupal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js">function configureGroup(){const n=Number(document.getElementById('rg-count').value);if(!Number.isInteger(n)||n<2||n>8)throw new Error('Elija entre 2 y 8 estados.');const names=document.getElementById('rg-names').value.split(',').map(v=>v.trim());if(names.length!==n||names.some(v=>!v))throw new Error('Ingrese exactamente '+n+' nombres.');STATES.splice(0,STATES.length,...names);const palette=['#ef4444','#f97316','#eab308','#84cc16','#22c55e','#14b8a6','#10b981','#059669'];SC_HEX.splice(0,SC_HEX.length,...Array.from({length:n},(_,i)=>palette[Math.round(i*7/(n-1))]));pi0=Array(n).fill(100/n);resetMatrix();buildDistInputs();const target=document.getElementById('sel-target');target.replaceChildren(...STATES.map((name,i)=>{const o=document.createElement('option');o.value=i;o.textContent=name;return o;}));target.value=n-1;updateTargetLabel();}
+function groupPreset(mode){const n=STATES.length;P=Array.from({length:n},(_,i)=>{const row=Array(n).fill(.05/n);row[i]+=.65;row[Math.max(0,Math.min(n-1,i+(mode===2?-1:1)))]+=.3;return row;});pi0=Array(n).fill(0);pi0[mode===1?n-1:0]=100;renderMatrix();buildDistInputs();updatePi(0,String(pi0[0]));}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   TOKENS — Executive Dark Dashboard
+═══════════════════════════════════════ */
+:root{
+  --bg:    #080c12;
+  --s0:    #0d1320;
+  --s1:    #111929;
+  --s2:    #162035;
+  --s3:    #1c2840;
+  --bd:    #1e2d47;
+  --bd2:   #263552;
+
+  --em:    #10b981;  /* emerald */
+  --em-d:  #059669;
+  --em-l:  rgba(16,185,129,.12);
+  --em-m:  rgba(16,185,129,.25);
+
+  --gold:  #f59e0b;
+  --gold-l:rgba(245,158,11,.12);
+  --gold-m:rgba(245,158,11,.3);
+
+  --rose:  #f43f5e;
+  --rose-l:rgba(244,63,94,.12);
+  --blue:  #3b82f6;
+  --blue-l:rgba(59,130,246,.12);
+  --violet:#8b5cf6;
+  --cyan:  #06b6d4;
+
+  --t0: #f0f6ff;
+  --t1: #c8d8f0;
+  --t2: #7a96b8;
+  --t3: #a3b8d2;
+
+  /* State palette — matches MATLAB colours */
+  --c0: #ef4444;   /* Muy Malo   */
+  --c1: #f97316;   /* Malo       */
+  --c2: #eab308;   /* Normal     */
+  --c3: #22c55e;   /* Bueno      */
+  --c4: #06b6d4;   /* Muy Bueno  */
+
+  --r:   10px;
+  --r2:  16px;
+  --sh:  0 4px 24px rgba(0,0,0,.5);
+  --tr:  .2s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--t0);
+  font-family:'Outfit',sans-serif;font-size:14px;line-height:1.6;
+  min-height:100vh;overflow-x:hidden;
+}
+/* scan-line texture */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,.012) 2px,rgba(255,255,255,.012) 4px);
+  pointer-events:none;z-index:0;
+}
+body>*{position:relative;z-index:1}
+
+/* ═══════════════════════════════════════
+   HEADER
+═══════════════════════════════════════ */
+header{
+  background:linear-gradient(135deg,#060a10 0%,#0d1828 60%,#0f2035 100%);
+  border-bottom:1px solid var(--bd);
+  padding:24px 40px 20px;
+  display:flex;align-items:flex-end;justify-content:space-between;
+  flex-wrap:wrap;gap:14px;
+  box-shadow:0 4px 40px rgba(0,0,0,.6);
+}
+.hd-brand h1{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:2.4rem;letter-spacing:2px;
+  background:linear-gradient(100deg,var(--em),var(--cyan) 60%,var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  line-height:1;
+}
+.hd-brand p{color:var(--t2);font-size:12px;margin-top:5px;letter-spacing:.4px}
+.badge-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px}
+.hbadge{
+  padding:3px 11px;border-radius:20px;font-size:10.5px;
+  font-family:'JetBrains Mono',monospace;
+  border:1px solid var(--bd2);background:rgba(255,255,255,.04);color:var(--t2);
+}
+.hbadge.em{color:var(--em);border-color:var(--em-m);background:var(--em-l)}
+.hbadge.go{color:var(--gold);border-color:var(--gold-m);background:var(--gold-l)}
+
+/* ═══════════════════════════════════════
+   TABS
+═══════════════════════════════════════ */
+.tab-bar{
+  background:var(--s0);border-bottom:1px solid var(--bd);
+  display:flex;padding:0 40px;overflow-x:auto;gap:0;
+}
+.tab-bar::-webkit-scrollbar{height:3px}
+.tab-bar::-webkit-scrollbar-thumb{background:var(--bd2)}
+.tab-btn{
+  background:none;border:none;color:var(--t3);
+  font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;
+  letter-spacing:.6px;text-transform:uppercase;
+  padding:13px 22px;cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:var(--tr);white-space:nowrap;
+  display:flex;align-items:center;gap:8px;
+}
+.tab-btn:hover{color:var(--t1)}
+.tab-btn.active{color:var(--em);border-bottom-color:var(--em)}
+
+/* ═══════════════════════════════════════
+   PAGES
+═══════════════════════════════════════ */
+.page{display:none;padding:28px 40px;max-width:1400px;margin:0 auto;animation:fadeUp .3s ease}
+.page.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+
+.layout-12{display:grid;grid-template-columns:360px 1fr;gap:22px;align-items:start}
+.layout-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.layout-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+.col{display:flex;flex-direction:column;gap:18px}
+@media(max-width:1050px){
+  .layout-12,.layout-2,.layout-3{grid-template-columns:1fr}
+  header,.tab-bar,.page{padding-left:16px;padding-right:16px}
+}
+
+/* ═══════════════════════════════════════
+   CARDS
+═══════════════════════════════════════ */
+.card{
+  background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);
+  padding:20px 22px;box-shadow:var(--sh);
+}
+.card-head{
+  display:flex;align-items:center;gap:9px;margin-bottom:16px;
+  font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:1.5px;
+  color:var(--t0);
+}
+.card-head .pip{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* ═══════════════════════════════════════
+   CONTROLS
+═══════════════════════════════════════ */
+.ctrl{margin-bottom:14px}
+.ctrl label{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:11px;font-weight:700;color:var(--t3);
+  margin-bottom:5px;letter-spacing:.5px;text-transform:uppercase;
+}
+.ctrl label .cv{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:var(--em);background:var(--em-l);
+  padding:1px 8px;border-radius:4px;text-transform:none;
+}
+input[type=range]{width:100%;height:4px;accent-color:var(--em);cursor:pointer}
+input[type=number]{
+  width:100%;background:var(--s2);border:1px solid var(--bd2);
+  border-radius:6px;color:var(--t0);
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+  padding:7px 10px;outline:none;transition:border-color var(--tr),box-shadow var(--tr);
+  -moz-appearance:textfield;
+}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+input[type=number]:focus{border-color:var(--em);box-shadow:0 0 0 3px var(--em-l)}
+input[type=number].invalid{border-color:var(--rose);background:var(--rose-l)}
+
+.field-label{
+  font-size:10.5px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.6px;color:var(--t3);margin-bottom:5px;
+}
+
+/* ═══════════════════════════════════════
+   BUTTON
+═══════════════════════════════════════ */
+.btn{
+  width:100%;padding:11px;border:none;border-radius:8px;
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;
+  letter-spacing:.5px;text-transform:uppercase;cursor:pointer;
+  transition:var(--tr);
+}
+.btn-em{
+  background:linear-gradient(135deg,var(--em),var(--em-d));
+  color:#fff;box-shadow:0 4px 16px rgba(16,185,129,.3);
+}
+.btn-em:hover{opacity:.88;transform:translateY(-1px);box-shadow:0 6px 22px rgba(16,185,129,.4)}
+.btn-em:active{transform:translateY(0)}
+
+/* ═══════════════════════════════════════
+   KPI ROW
+═══════════════════════════════════════ */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+@media(max-width:900px){.kpi-row{grid-template-columns:1fr 1fr}}
+.kpi{
+  background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);
+  padding:12px 14px;
+}
+.kpi-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);margin-bottom:4px}
+.kpi-value{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:500;line-height:1.1}
+.kpi-sub{font-size:10px;color:var(--t3);margin-top:3px}
+
+/* ═══════════════════════════════════════
+   STATE BARS (initial distribution)
+═══════════════════════════════════════ */
+.state-row{display:grid;grid-template-columns:90px 1fr 70px;gap:8px;align-items:center;margin-bottom:8px}
+.state-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;
+  display:inline-block;margin-right:5px;
+}
+.state-label{font-size:12px;font-weight:600;display:flex;align-items:center}
+.state-bar-bg{
+  height:6px;background:var(--s3);border-radius:3px;overflow:hidden;
+}
+.state-bar-fill{height:100%;border-radius:3px;transition:width .4s ease}
+
+/* ═══════════════════════════════════════
+   MATRIX TABLE
+═══════════════════════════════════════ */
+.mtx-wrap{overflow-x:auto}
+.mtx{border-collapse:collapse;width:100%;font-family:'JetBrains Mono',monospace;font-size:11.5px}
+.mtx th{
+  padding:7px 10px;text-align:center;font-size:9.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.6px;color:var(--t3);
+  background:var(--s2);border-bottom:1px solid var(--bd);
+}
+.mtx th.row-lbl{text-align:left;padding-left:12px}
+.mtx td{padding:4px 4px;text-align:center;border:none}
+.mtx td.row-lbl{
+  text-align:left;padding:7px 10px;font-size:11px;
+  font-family:'Outfit',sans-serif;font-weight:600;white-space:nowrap;
+}
+.mtx td input{
+  width:62px;text-align:center;font-size:11.5px;padding:5px 4px;
+  background:var(--s3);
+}
+.mtx tr:hover td{background:rgba(16,185,129,.04)}
+.mtx td input:focus{border-color:var(--em)}
+
+/* ═══════════════════════════════════════
+   RESULT TABLE
+═══════════════════════════════════════ */
+.rtbl{width:100%;border-collapse:collapse}
+.rtbl th{
+  text-align:left;font-size:9.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.7px;color:var(--t3);
+  padding:6px 10px;border-bottom:1px solid var(--bd);background:var(--s2);
+}
+.rtbl td{
+  padding:8px 10px;border-bottom:1px solid rgba(30,45,71,.5);
+  font-size:12px;
+}
+.rtbl tr:last-child td{border-bottom:none}
+.rtbl tr:hover td{background:rgba(16,185,129,.05)}
+.rtbl td.mono{font-family:'JetBrains Mono',monospace;font-size:11.5px}
+.rtbl td.num{font-family:'JetBrains Mono',monospace;text-align:right}
+
+/* ═══════════════════════════════════════
+   CHARTS
+═══════════════════════════════════════ */
+.chart-wrap{position:relative;height:260px}
+.chart-wrap.tall{height:320px}
+
+/* ═══════════════════════════════════════
+   INTERPRETATION BOX
+═══════════════════════════════════════ */
+.ibox{
+  background:linear-gradient(135deg,rgba(16,185,129,.07),rgba(6,182,212,.04));
+  border:1px solid var(--bd2);border-left:3px solid var(--em);
+  border-radius:0 var(--r) var(--r) 0;
+  padding:20px 22px;animation:fadeUp .35s ease;
+}
+.ibox-head{
+  display:flex;align-items:center;gap:10px;margin-bottom:16px;
+  font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:1.5px;color:var(--t0);
+}
+.ibox-head .iicon{font-size:18px}
+.itag{
+  margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;
+  padding:2px 9px;border-radius:4px;
+  background:var(--em-l);border:1px solid var(--em-m);color:var(--em);
+}
+.iblock{margin-bottom:14px}
+.iblock:last-child{margin-bottom:0}
+.iblock-title{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+  color:var(--em);margin-bottom:6px;display:flex;align-items:center;gap:6px;
+}
+.iblock-title::before{content:'';display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--em);flex-shrink:0}
+.iblock p{font-size:12.5px;color:var(--t1);line-height:1.8}
+.iblock p strong{color:var(--t0)}
+.iblock p em{font-style:normal;font-family:'JetBrains Mono',monospace;font-size:11.5px}
+.idivider{height:1px;background:var(--bd);margin:12px 0}
+.ibox-pending{color:var(--t3);font-size:12px;font-style:italic;padding:8px 0;display:flex;align-items:center;gap:8px}
+
+/* ═══════════════════════════════════════
+   VALUE PILLS
+═══════════════════════════════════════ */
+.vp{display:inline-flex;align-items:center;font-family:'JetBrains Mono',monospace;font-size:11.5px;padding:1px 8px;border-radius:4px}
+.vp-em  {background:var(--em-l);color:var(--em);border:1px solid var(--em-m)}
+.vp-go  {background:var(--gold-l);color:var(--gold);border:1px solid var(--gold-m)}
+.vp-ro  {background:var(--rose-l);color:var(--rose);border:1px solid rgba(244,63,94,.3)}
+.vp-bl  {background:var(--blue-l);color:var(--blue);border:1px solid rgba(59,130,246,.3)}
+.vp-cy  {background:rgba(6,182,212,.1);color:var(--cyan);border:1px solid rgba(6,182,212,.3)}
+.vp-vi  {background:rgba(139,92,246,.1);color:var(--violet);border:1px solid rgba(139,92,246,.3)}
+
+/* ═══════════════════════════════════════
+   CHIP
+═══════════════════════════════════════ */
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:700}
+.chip-ok  {background:var(--em-l);border:1px solid var(--em-m);color:var(--em)}
+.chip-warn{background:var(--gold-l);border:1px solid var(--gold-m);color:var(--gold)}
+.chip-bad {background:var(--rose-l);border:1px solid rgba(244,63,94,.3);color:var(--rose)}
+
+/* ═══════════════════════════════════════
+   ROW VALIDATION
+═══════════════════════════════════════ */
+.row-sum{
+  font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 10px;
+  border-radius:5px;margin-top:4px;display:flex;align-items:center;gap:8px;
+}
+.rs-ok {background:var(--em-l);color:var(--em)}
+.rs-bad{background:var(--rose-l);color:var(--rose)}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
+/* ═══ ACCESIBILIDAD Y ENTREGA · v3.1 ═══ */
+:root { --tr:.2s ease; }
+:focus-visible { outline:3px solid #3b82f6;outline-offset:3px; }
+.audit-controls { padding:12px 20px;margin:12px auto;max-width:1400px;border:1px solid currentColor;border-radius:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font:inherit; }
+.audit-controls input { width:130px; }
+.audit-controls p { flex-basis:100%;margin:0;font-size:14px;line-height:1.6; }
+button,.tab-btn,.nav-link,input[type=number],select { min-height:44px; }
+.preset-chip { font:inherit; }
+table { max-width:100%; }
+canvas { max-width:100%; }
+@media(max-width:799px) {
+  .audit-controls { margin:8px;padding:12px; }
+  .grid,.grid-2,.layout,.main-grid,.kpi-row,.metrics-row { grid-template-columns:minmax(0,1fr)!important; }
+  .card,.panel { min-width:0; }
+  .tab-bar,.tabs,.nav-tabs { overflow-x:auto; }
+  .matrix-table { overflow-x:auto;max-width:100%; }
+}
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important;transition:none!important;scroll-behavior:auto!important; } }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd-brand">
+    <h1>Markov · Group Predictor</h1>
+    <p>Sistema de Predicción de Desempeño Grupal — Cadenas de Markov · MFPT · Distribución Estacionaria</p>
+    <div class="badge-row">
+      <span class="hbadge em">Markov Chain</span>
+      <span class="hbadge go">MFPT</span>
+      <span class="hbadge">Dist. Estacionaria</span>
+      <span class="hbadge">MATLAB R2019a</span>
+    </div>
+  </div>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('sim',this)">📊 Simulación</button>
+  <button class="tab-btn" onclick="showTab('matrix',this)">🔢 Matriz de Transición</button>
+  <button class="tab-btn" onclick="showTab('mfpt',this)">⏱ MFPT &amp; Estacionaria</button>
+  <button class="tab-btn" onclick="showTab('guide',this)">📖 Fundamentos</button>
+</div>
+
+<!-- ═══════════════════════════════════════
+     TAB 1: SIMULACIÓN
+═══════════════════════════════════════ -->
+<div id="tab-sim" class="page active">
+  <div class="layout-12">
+
+    <!-- LEFT -->
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--em)"></span>Configuración</div>
+
+        <div class="ctrl">
+          <label>Tiempo total de evaluación <em>T</em><span class="cv" id="cv-T">30</span></label>
+          <label for="rg-count">Número de estados</label><input id="rg-count" type="number" min="2" max="8" value="5"><label for="rg-names">Nombres, de menor a mayor desempeño</label><input id="rg-names" type="text" value="Muy Malo,Malo,Normal,Bueno,Muy Bueno"><button type="button" onclick="configureGroup()">Aplicar estados</button><label for="rg-unit">Unidad de cada transición</label><select id="rg-unit"><option>semanas</option><option>días</option><option>meses</option><option>sesiones</option><option>trimestres</option></select><div id="rg-presets"><button type="button" onclick="groupPreset(0)">🌱 Equipo en formación</button><button type="button" onclick="groupPreset(1)">✅ Alto rendimiento</button><button type="button" onclick="groupPreset(2)">⚠️ Equipo en conflicto</button></div><input type="range" id="sl-T" min="5" max="120" value="30" oninput="syncSl('sl-T','cv-T',0)">
+        </div>
+        <div style="font-size:10.5px;color:var(--t3);margin-top:-8px;margin-bottom:12px;font-style:italic">
+          Visualización en 30 pasos equiespaciados (paso = T/30). Puede representar días, semanas, quincenas u otro período.
+        </div>
+
+        <p class="field-label" style="margin-bottom:10px">Distribución inicial del grupo (%)</p>
+        <div id="dist-inputs"></div>
+        <div id="dist-sum" class="row-sum rs-ok">Σ = 100%</div>
+
+        <button class="btn btn-em" style="margin-top:14px" onclick="runSimulation()">▶ Simular Evolución</button>
+      </div>
+
+      <!-- State KPIs at t=0 and t=T -->
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--gold)"></span>Estado Final Proyectado</div>
+        <div id="kpi-final-row" class="kpi-row"></div>
+        <div class="ibox-pending" id="kpi-pending">⟳ Ejecuta la simulación</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--cyan)"></span>Tabla de Evolución</div>
+        <div style="overflow-x:auto;max-height:280px;overflow-y:auto">
+          <table class="rtbl" id="tbl-evol">
+            <thead><tr><th>Tiempo</th><th>Muy Malo</th><th>Malo</th><th>Normal</th><th>Bueno</th><th>Muy Bueno</th></tr></thead>
+            <tbody id="tbody-evol"><tr><td colspan="6" style="color:var(--t3);text-align:center;padding:16px">— Ejecuta la simulación —</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--em)"></span>Trayectoria de la Distribución Grupal</div>
+        <div class="chart-wrap tall"><canvas id="c-evol"></canvas></div>
+      </div>
+
+      <div class="layout-2">
+        <div class="card">
+          <div class="card-head"><span class="pip" style="background:var(--gold)"></span>Pronóstico de Estabilidad</div>
+          <div class="chart-wrap"><canvas id="c-stat"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="pip" style="background:var(--cyan)"></span>Distribución Inicial vs. Final</div>
+          <div class="chart-wrap"><canvas id="c-compare"></canvas></div>
+        </div>
+      </div>
+
+      <div id="ibox-sim" class="ibox">
+        <div class="ibox-pending">⟳ Ejecuta la simulación para ver el análisis</div>
+      </div>
+
+      <!-- Leadership Guide — Section 9 of MATLAB -->
+      <div id="leadership-card" class="card" style="display:none">
+        <div class="card-head"><span class="pip" style="background:var(--gold)"></span>Guía de Interpretación para el Liderazgo</div>
+        <div id="leadership-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     TAB 2: MATRIX
+═══════════════════════════════════════ -->
+<div id="tab-matrix" class="page">
+  <div class="layout-12">
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--blue)"></span>Editar Matriz de Transición</div>
+        <p style="font-size:11px;color:var(--t2);margin-bottom:12px;line-height:1.7">
+          Cada fila representa la probabilidad de moverse desde un estado a otro. 
+          La suma de cada fila debe ser exactamente <em>1.00</em>. 
+          Modifica los valores para reflejar la "cultura de movimiento" de tu equipo.
+        </p>
+        <div id="row-sums"></div>
+        <button class="btn btn-em" style="margin-top:14px" onclick="resetMatrix()">↺ Restaurar valores MATLAB</button>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--violet)"></span>Guía de Interpretación</div>
+        <table class="rtbl">
+          <thead><tr><th>Diagonal P[i,i]</th><th>Interpretación</th></tr></thead>
+          <tbody>
+            <tr><td class="mono" style="color:var(--em)">≥ 0.70</td><td>Alta inercia — el estado tiende a perpetuarse</td></tr>
+            <tr><td class="mono" style="color:var(--gold)">0.40–0.69</td><td>Moderada — hay movilidad, pero con resistencia</td></tr>
+            <tr><td class="mono" style="color:var(--rose)">< 0.40</td><td>Alta volatilidad — transiciones frecuentes</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:11px;color:var(--t3);margin-top:10px;font-style:italic">
+          Los valores fuera de la diagonal indican la probabilidad de transición a otro estado. 
+          Una matriz con valores altos por encima de la diagonal indica tendencia al crecimiento.
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--blue)"></span>Matriz P — Probabilidades de Transición</div>
+        <div class="mtx-wrap">
+          <table class="mtx" id="mtx-table"></table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--violet)"></span>Mapa de Calor — Matriz de Transición</div>
+        <div class="chart-wrap tall"><canvas id="c-heatmap"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     TAB 3: MFPT
+═══════════════════════════════════════ -->
+<div id="tab-mfpt" class="page">
+  <div class="layout-12">
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--gold)"></span>Estado Objetivo</div>
+        <p style="font-size:11px;color:var(--t2);margin-bottom:12px">
+          El MFPT calcula el tiempo esperado para que el grupo llegue por primera vez al estado objetivo.
+        </p>
+        <div class="ctrl">
+          <label>Estado objetivo<span class="cv" id="cv-target">Bueno</span></label>
+          <select id="sel-target" onchange="updateTargetLabel();runMFPT()"
+            style="width:100%;background:var(--s2);border:1px solid var(--bd2);border-radius:6px;
+                   color:var(--t0);font-family:'JetBrains Mono',monospace;font-size:12px;
+                   padding:8px 10px;outline:none;cursor:pointer;appearance:none">
+            <option value="0">Muy Malo</option>
+            <option value="1">Malo</option>
+            <option value="2">Normal</option>
+            <option value="3" selected>Bueno</option>
+            <option value="4">Muy Bueno</option>
+          </select>
+        </div>
+        <button class="btn btn-em" onclick="runMFPT()">▶ Calcular MFPT</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--gold)"></span>Tiempos Medios de Llegada</div>
+        <table class="rtbl" id="tbl-mfpt">
+          <thead><tr><th>Desde Estado</th><th>MFPT (unidades)</th><th>Evaluación</th></tr></thead>
+          <tbody id="tbody-mfpt"><tr><td colspan="3" style="color:var(--t3);text-align:center;padding:16px">—</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--em)"></span>Distribución Estacionaria π</div>
+        <table class="rtbl" id="tbl-stat">
+          <thead><tr><th>Estado</th><th>π (prob. equilibrio)</th><th>Grupo % a largo plazo</th></tr></thead>
+          <tbody id="tbody-stat"><tr><td colspan="3" style="color:var(--t3);text-align:center;padding:16px">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--gold)"></span>MFPT por Estado de Origen</div>
+        <div class="chart-wrap tall"><canvas id="c-mfpt-bar"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--em)"></span>Distribución Estacionaria</div>
+        <div class="chart-wrap"><canvas id="c-stat2"></canvas></div>
+      </div>
+      <div id="ibox-mfpt" class="ibox">
+        <div class="ibox-pending">⟳ Calcula el MFPT para ver el análisis</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     TAB 4: GUIDE
+═══════════════════════════════════════ -->
+<div id="tab-guide" class="page">
+  <div class="layout-2">
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--em)"></span>¿Qué es una Cadena de Markov?</div>
+        <div class="iblock">
+          <div class="iblock-title">Definición formal</div>
+          <p>Una cadena de Markov es un proceso estocástico {X_t} donde la probabilidad de transición al siguiente estado depende <strong>únicamente del estado actual</strong>, no del historial previo. Esta es la <strong>propiedad de Markov</strong> o "falta de memoria":</p>
+        </div>
+        <div style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:12px 16px;margin:12px 0">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--em)">
+            P(X_{t+1}=j | X_t=i, X_{t-1},...) = P(X_{t+1}=j | X_t=i) = P[i,j]
+          </span>
+        </div>
+        <div class="iblock">
+          <p>En el contexto del desempeño grupal, esto supone que el estado de rendimiento de un empleado en la próxima evaluación depende únicamente de su estado actual — no de cómo llegó a él.</p>
+        </div>
+        <div class="iblock">
+          <div class="iblock-title">Evolución de la distribución grupal</div>
+          <p>Si <strong>π₀</strong> es la distribución inicial del grupo, tras <em>n</em> períodos:</p>
+        </div>
+        <div style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:12px 16px;margin:12px 0">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan)">πₙ = π₀ · Pⁿ</span>
+        </div>
+        <div class="iblock">
+          <p>Esto significa que para predecir la distribución grupal en el período <em>n</em>, se aplica la matriz P repetidamente <em>n</em> veces sobre la distribución inicial.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--gold)"></span>Tiempo Medio de Primer Paso (MFPT)</div>
+        <div class="iblock">
+          <p>El MFPT desde el estado <em>i</em> al estado objetivo <em>j</em> es el número esperado de transiciones necesarias para llegar a <em>j</em> por primera vez. Se calcula mediante la <strong>matriz fundamental N</strong>:</p>
+        </div>
+        <div style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:12px 16px;margin:12px 0;display:flex;flex-direction:column;gap:6px">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold)">Q = P sin la fila y columna del estado objetivo</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold)">N = (I − Q)⁻¹</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold)">MFPT = N · 1 (vector de unos)</span>
+        </div>
+        <div class="iblock">
+          <p>El MFPT depende de la matriz de transición P, no de la distribución inicial del grupo. Refleja la <strong>velocidad estructural de mejora</strong> del sistema.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--cyan)"></span>Distribución Estacionaria π*</div>
+        <div class="iblock">
+          <p>La distribución estacionaria es el estado de equilibrio al que converge el grupo si no hay intervenciones externas. Es el autovector izquierdo de P asociado al autovalor 1:</p>
+        </div>
+        <div style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:12px 16px;margin:12px 0;display:flex;flex-direction:column;gap:6px">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan)">π* · P = π*</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan)">Σᵢ π*ᵢ = 1</span>
+        </div>
+        <div class="iblock">
+          <p>Esta distribución representa el <strong>pronóstico de largo plazo del grupo sin intervención</strong>. Si π* está dominada por "Normal", el equipo sufre de estancamiento estructural.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--violet)"></span>Señales de Gestión — Semáforo Estratégico</div>
+        <table class="rtbl">
+          <thead><tr><th>Indicador</th><th>Señal Positiva</th><th>Señal de Alerta</th></tr></thead>
+          <tbody>
+            <tr><td>π* en "Bueno" + "Muy Bueno"</td><td><span class="chip chip-ok">≥ 40%</span></td><td><span class="chip chip-bad">< 25%</span></td></tr>
+            <tr><td>MFPT desde "Muy Malo" a "Bueno"</td><td><span class="chip chip-ok">< 15 per.</span></td><td><span class="chip chip-bad">≥ 25 per.</span></td></tr>
+            <tr><td>Diagonal de P (inercia)</td><td><span class="chip chip-ok">Alta en buenos</span></td><td><span class="chip chip-bad">Alta en malos</span></td></tr>
+            <tr><td>Convergencia al estado objetivo</td><td><span class="chip chip-ok">Monotónica</span></td><td><span class="chip chip-warn">Oscilante</span></td></tr>
+            <tr><td>π* en "Normal" (estancamiento)</td><td><span class="chip chip-ok">< 35%</span></td><td><span class="chip chip-bad">≥ 50%</span></td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:11px;color:var(--t3);margin-top:10px;font-style:italic">
+          Referencias: Norris (1998) Markov Chains. Cambridge University Press. 
+          Allen (2011) An Introduction to Stochastic Processes. Cambridge.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--rose)"></span>Limitaciones del Modelo</div>
+        <div class="iblock">
+          <p><strong>Supuesto de homogeneidad:</strong> la matriz P es la misma para todos los miembros y en todos los períodos. En grupos reales existen subpoblaciones con dinámicas distintas.</p>
+        </div>
+        <div class="idivider"></div>
+        <div class="iblock">
+          <p><strong>Propiedad de Markov:</strong> el modelo ignora efectos de historial (p.ej., un empleado que lleva 3 ciclos en "Muy Malo" puede tener mayor resistencia al cambio). Modelos de orden superior pueden capturar esta dependencia.</p>
+        </div>
+        <div class="idivider"></div>
+        <div class="iblock">
+          <p><strong>Estacionariedad:</strong> la matriz P se asume constante. Intervenciones, cambios culturales o externos la modifican, haciendo necesaria la re-estimación periódica con datos empíricos.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════ -->
+<script>
+/* ═══ NÚCLEO VALIDADO · v3.1 · incrustado en cada HTML autónomo ═══ */
+function escapeHTML(value) { return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function requireProbabilityVector(values, n, title='Distribución', tolerance=0.001) {
+  if(!Array.isArray(values)||values.length!==n||values.some(v=>!Number.isFinite(v)||v<0||v>1)) throw new Error(title+': ingrese '+n+' probabilidades finitas entre 0 y 1.');
+  const sum=values.reduce((a,b)=>a+b,0);
+  if(Math.abs(sum-1)>tolerance) throw new Error(title+': la suma debe ser 1; suma actual '+sum.toFixed(6)+'.');
+  return values.map(v=>v/sum);
+}
+function requireStochastic(P) {
+  if(!Array.isArray(P)||!P.length) throw new Error('La matriz está vacía.');
+  return P.map((row,i)=>requireProbabilityVector(row,P.length,'Fila '+(i+1)));
+}
+function solveLinear(A,b) {
+  const n=A.length, M=A.map((r,i)=>[...r,b[i]]);
+  for(let c=0;c<n;c++) {
+    let pivot=c; for(let i=c+1;i<n;i++) if(Math.abs(M[i][c])>Math.abs(M[pivot][c])) pivot=i;
+    if(Math.abs(M[pivot][c])<1e-12) return null;
+    [M[c],M[pivot]]=[M[pivot],M[c]];
+    const scale=M[c][c]; for(let j=c;j<=n;j++) M[c][j]/=scale;
+    for(let i=0;i<n;i++) if(i!==c) {const f=M[i][c];for(let j=c;j<=n;j++)M[i][j]-=f*M[c][j];}
+  }
+  return M.map(r=>r[n]);
+}
+function markovStructure(P) {
+  const n=P.length, reach=P.map((r,i)=>r.map((v,j)=>v>0||i===j));
+  for(let k=0;k<n;k++)for(let i=0;i<n;i++)for(let j=0;j<n;j++)reach[i][j]=reach[i][j]||(reach[i][k]&&reach[k][j]);
+  const seen=new Set(), classes=[];
+  for(let i=0;i<n;i++) if(!seen.has(i)) {const cls=[];for(let j=0;j<n;j++)if(reach[i][j]&&reach[j][i]){cls.push(j);seen.add(j);}classes.push(cls);}
+  const closed=classes.filter(cls=>cls.every(i=>P[i].every((v,j)=>v===0||cls.includes(j))));
+  const gcd=(a,b)=>b?gcd(b,a%b):Math.abs(a);
+  const periods=closed.map(cls=>{const d=Array(n).fill(null),queue=[cls[0]];d[cls[0]]=0;for(let q=0;q<queue.length;q++)for(const j of cls)if(P[queue[q]][j]>0&&d[j]===null){d[j]=d[queue[q]]+1;queue.push(j);}let g=0;for(const i of cls)for(const j of cls)if(P[i][j]>0)g=gcd(g,d[i]+1-d[j]);return g||1;});
+  return {reach,closed,periods,unique:closed.length===1,periodic:periods.some(p=>p>1)};
+}
+function stationaryDistribution(P,initial=null) {
+  P=requireStochastic(P);const n=P.length, init=initial?requireProbabilityVector(initial,n):Array(n).fill(1/n);
+  const info=markovStructure(P), closedSet=new Set(info.closed.flat()), trans=Array.from({length:n},(_,i)=>i).filter(i=>!closedSet.has(i));
+  const out=Array(n).fill(0);
+  for(const cls of info.closed) {
+    const size=cls.length, A=cls.map((j,r)=>cls.map((i,c)=>P[i][j]-(r===c?1:0))), b=Array(size).fill(0);
+    A[size-1]=Array(size).fill(1);b[size-1]=1;const local=solveLinear(A,b);
+    if(!local) throw new Error('No se pudo resolver la distribución estacionaria.');
+    let weight=cls.reduce((s,i)=>s+init[i],0);
+    if(trans.length){const M=trans.map((i,r)=>trans.map((j,c)=>(r===c?1:0)-P[i][j])), R=trans.map(i=>cls.reduce((s,j)=>s+P[i][j],0));const h=solveLinear(M,R);if(!h)throw new Error('No se pudo resolver la absorción entre clases.');weight+=trans.reduce((s,i,r)=>s+init[i]*h[r],0);}
+    cls.forEach((i,r)=>out[i]=Math.max(0,local[r])*weight);
+  }
+  const residual=out.reduce((s,v,j)=>s+Math.abs(v-out.reduce((a,x,i)=>a+x*P[i][j],0)),0);
+  if(!out.every(Number.isFinite)||residual>1e-8)throw new Error('Distribución estacionaria con residuo excesivo.');
+  out.details={...info,residual};return out;
+}
+function meanFirstPassage(P,target) {
+  P=requireStochastic(P);const n=P.length;
+  if(!Number.isInteger(target)||target<0||target>=n)throw new Error('Estado objetivo inválido.');
+  // La meta se detiene al primer arribo: no explorar sus salidas.
+  const stopped=P.map((r,i)=>i===target?r.map((_,j)=>j===target?1:0):r.slice());
+  const info=markovStructure(stopped), bad=info.closed.filter(c=>!c.includes(target)).flat();
+  const finite=Array.from({length:n},(_,i)=>i).filter(i=>i!==target&&!bad.some(j=>info.reach[i][j]));
+  const M=finite.map((i,r)=>finite.map((j,c)=>(r===c?1:0)-P[i][j]));
+  const times=finite.length?solveLinear(M,Array(finite.length).fill(1)):[];
+  if(!times)throw new Error('No se pudo resolver el tiempo de llegada.');
+  return Array.from({length:n},(_,i)=>i).filter(i=>i!==target).map(i=>finite.includes(i)?times[finite.indexOf(i)]:Infinity);
+}
+function strictObservations(text,continuous=false,nStates=null,line=1) {
+  const raw=String(text).trim();if(!raw)throw new Error('Línea '+line+': faltan observaciones.');
+  const tokens=raw.includes(',')||raw.includes(';')?raw.split(/[,;]/):raw.split(/\s+/);
+  return tokens.map((token,i)=>{const clean=token.trim();if(!clean)throw new Error('Línea '+line+', observación '+(i+1)+': dato ausente.');const v=Number(clean);if(!Number.isFinite(v)||(!continuous&&!Number.isInteger(v))||(!continuous&&(v<0||(nStates!==null&&v>=nStates))))throw new Error('Línea '+line+', observación '+(i+1)+': valor inválido «'+clean+'». No se eliminarán observaciones ni se comprimirá el tiempo.');return v;});
+}
+function parseNamedSubjects(text,continuous=false,nStates=null) {
+  return String(text).split('\n').flatMap((line,index)=>{line=line.trim();if(!line||line.startsWith('#'))return [];const colon=line.indexOf(':');return [{name:colon>=0?line.slice(0,colon).trim():'Sujeto '+(index+1),obs:strictObservations(colon>=0?line.slice(colon+1):line,continuous,nStates,index+1)}];});
+}
+function strictStateLabels(text,names,n,line=1){const tokens=String(text).includes(',')||String(text).includes(';')?String(text).split(/[,;]/):String(text).trim().split(/\s+/);return tokens.map((token,i)=>{const value=token.trim(),index=names.findIndex(s=>s.toLowerCase()===value.toLowerCase());if(index>=0&&index<n)return index;return strictObservations(value,false,n,line)[0];});}
+function validateCTMCRecords(lines,nStates,baseStates){lines.forEach((line,index)=>{const row=strictObservations(line,true,null,index+1);if(row.length!==3||!Number.isInteger(row[0])||!Number.isInteger(row[1])||row[0]<0||row[1]<0||row[0]>=nStates||row[1]>=nStates||row[0]===row[1]||row[0]>=baseStates||row[2]<=0)throw new Error('Registro CTMC inválido en línea '+(index+1)+': se requieren origen, destino y duración positiva; el origen no puede ser absorbente.');});}
+function isStableAR(phi,margin=1e-6) {
+  if(phi.some(v=>!Number.isFinite(v)))return false;
+  let work=phi.slice();for(let p=work.length;p>0;p--){const k=work[p-1];if(Math.abs(k)>=1-margin)return false;const prev=[];for(let i=0;i<p-1;i++)prev.push((work[i]+k*work[p-2-i])/(1-k*k));work=prev;}return true;
+}
+function stableARCoefficients(phi) {
+  if(isStableAR(phi,0.001))return phi.slice();
+  let factor=1;for(let i=0;i<300;i++){factor*=0.97;const candidate=phi.map(v=>v*factor);if(isStableAR(candidate,0.001))return candidate;}
+  throw new Error('No se pudo estabilizar el modelo AR.');
+}
+function constrainedWLS(y,X,w,inverse,ridge=1e-6) {
+  if(!y.length||!X.length)return {beta:[],varc:1,se:[]};
+  const n=X[0].length, M=Array.from({length:n},()=>Array(n).fill(0)),b=Array(n).fill(0);let sw=0;
+  y.forEach((v,i)=>{if(!Number.isFinite(v)||!Number.isFinite(w[i])||w[i]<0||X[i].some(x=>!Number.isFinite(x)))throw new Error('Datos no finitos en regresión.');sw+=w[i];for(let j=0;j<n;j++){b[j]+=w[i]*X[i][j]*v;for(let k=0;k<n;k++)M[j][k]+=w[i]*X[i][j]*X[i][k];}});
+  if(sw<1e-10)return {beta:Array(n).fill(0),varc:1,se:Array(n).fill(0)};
+  M.forEach((r,i)=>r[i]+=ridge);let beta=solveLinear(M,b);if(!beta)throw new Error('Regresión singular.');
+  const original=beta.slice(),phi=stableARCoefficients(beta.slice(1));beta=[beta[0],...phi];
+  beta[0]=y.reduce((s,v,i)=>s+w[i]*(v-phi.reduce((a,p,j)=>a+p*X[i][j+1],0)),0)/sw;
+  const err=y.reduce((s,v,i)=>s+w[i]*(v-X[i].reduce((a,x,j)=>a+x*beta[j],0))**2,0),varc=Math.max(1e-4,err/sw),inv=inverse(M);
+  return {beta,varc,se:inv?inv.map((r,j)=>Math.sqrt(Math.max(0,varc*r[j]))):Array(n).fill(0),constrained:original.some((v,i)=>Math.abs(v-beta[i])>1e-6)};
+}
+let auditSeedState=42;
+function setSimulationSeed(seed) {if(!Number.isInteger(seed)||seed<0||seed>4294967295)throw new Error('La semilla debe ser un entero entre 0 y 4294967295.');auditSeedState=seed>>>0;}
+function auditRandom(){auditSeedState=(auditSeedState+0x6D2B79F5)>>>0;let t=auditSeedState;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;}
+function gammaLog(z){const co=[676.5203681218851,-1259.1392167224028,771.3234287776531,-176.6150291621406,12.507343278686905,-.1385710952657201,9.984369578019572e-6,1.505632735149312e-7];if(z<.5)return Math.log(Math.PI)-Math.log(Math.sin(Math.PI*z))-gammaLog(1-z);z--;let x=.9999999999998099;co.forEach((v,i)=>x+=v/(z+i+1));const t=z+7.5;return .5*Math.log(2*Math.PI)+(z+.5)*Math.log(t)-t+Math.log(x);}
+function chiSquareSurvival(x,df){if(x===Infinity)return 0;if(!Number.isFinite(x)||x<0||df<=0)return null;if(x===0)return 1;const a=df/2,z=x/2,scale=Math.exp(-z+a*Math.log(z)-gammaLog(a));if(z<a+1){let sum=1/a,term=sum;for(let k=1;k<10000;k++){term*=z/(a+k);sum+=term;if(Math.abs(term)<Math.abs(sum)*1e-14)break;}return Math.max(0,Math.min(1,1-scale*sum));}let b=z+1-a,c=1e300,d=1/b,h=d;for(let i=1;i<10000;i++){const an=-i*(i-a);b+=2;d=an*d+b;if(Math.abs(d)<1e-300)d=1e-300;c=b+an/c;if(Math.abs(c)<1e-300)c=1e-300;d=1/d;const delta=d*c;h*=delta;if(Math.abs(delta-1)<1e-14)break;}return Math.max(0,Math.min(1,scale*h));}
+function groupedChiSquare(obs,expected,estimatedParams=0){if(obs.length!==expected.length||obs.some(v=>!Number.isFinite(v)||v<0)||expected.some(v=>!Number.isFinite(v)||v<0))throw new Error('Conteos inválidos para χ².');let groups=[],o=0,e=0;obs.forEach((v,i)=>{if(expected[i]===0&&v>0){groups.push([v,0]);return;}o+=v;e+=expected[i];if(e>=5){groups.push([o,e]);o=0;e=0;}});if(e>0||o>0){if(groups.length){groups.at(-1)[0]+=o;groups.at(-1)[1]+=e;}else groups.push([o,e]);}const df=groups.length-1-estimatedParams;const stat=groups.reduce((s,[a,b])=>s+(b===0?(a>0?Infinity:0):(a-b)**2/b),0);return {stat,df:Math.max(0,df),pv:df>0&&groups.every(g=>g[1]>=5)?chiSquareSurvival(stat,df):null,groups};}
+function downloadAuditText(filename,text){const blob=new Blob([text],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function reportUserError(error){const el=document.getElementById('audit-status');if(el){el.textContent=error.message||String(error);el.setAttribute('role','alert');}else alert(error.message||String(error));}
+function updateAccessibleCharts(){if(!window.Chart?.getChart)return;for(const canvas of document.querySelectorAll('canvas')){const chart=Chart.getChart(canvas);if(!chart?.data)continue;let details=document.getElementById('audit-table-'+canvas.id);if(!details){details=document.createElement('details');details.id='audit-table-'+canvas.id;details.className='audit-chart-table';canvas.insertAdjacentElement('afterend',details);}const labels=chart.data.labels||[],datasets=chart.data.datasets||[],n=Math.max(labels.length,...datasets.map(d=>d.data?.length||0));details.innerHTML='<summary>Consultar datos del gráfico en tabla</summary><div style="overflow:auto"><table><thead><tr><th scope="col">Observación</th>'+datasets.map(d=>'<th scope="col">'+escapeHTML(d.label||'Serie')+'</th>').join('')+'</tr></thead><tbody>'+Array.from({length:n},(_,i)=>'<tr><th scope="row">'+escapeHTML(labels[i]??i)+'</th>'+datasets.map(d=>{const v=d.data?.[i],text=v&&typeof v==='object'?Object.entries(v).map(([k,x])=>k+': '+x).join(', '):v??'—';return '<td>'+escapeHTML(text)+'</td>';}).join('')+'</tr>').join('')+'</tbody></table></div>';}}
+function runComputeWorker(entry,job,functions){return new Promise((resolve,reject)=>{const code='let auditSeedState=42;\n'+functions.map(f=>f.toString()).join('\n')+'\nonmessage=e=>{try{postMessage({result:'+entry+'(e.data,p=>postMessage({progress:p}))});}catch(e){postMessage({error:e.message});}}',url=URL.createObjectURL(new Blob([code],{type:'text/javascript'})),worker=new Worker(url),button=document.createElement('button');button.textContent='Cancelar cálculo';button.type='button';document.querySelector('.audit-controls').appendChild(button);const clean=()=>{worker.terminate();URL.revokeObjectURL(url);button.remove();};button.onclick=()=>{clean();reject(new Error('Cálculo cancelado.'));};worker.onmessage=e=>{if(e.data.progress!==undefined)document.getElementById('audit-status').textContent='Ajuste: '+Math.round(e.data.progress*100)+'%';if(e.data.error){clean();reject(new Error(e.data.error));}if(e.data.result){clean();resolve(e.data.result);}};worker.onerror=e=>{clean();reject(new Error(e.message||'Error al calcular.'));};worker.postMessage(job);});}
+function initializeAuditUI(runNames=[]) {
+  const controls=document.createElement('section');controls.className='audit-controls';controls.setAttribute('aria-label','Reproducibilidad y exportación');
+  controls.innerHTML='<label for="audit-seed">Semilla de simulación</label><input id="audit-seed" type="number" min="0" max="4294967295" step="1" value="42"><button type="button" id="audit-export">Descargar resultados y configuración</button><p id="audit-status" role="status" aria-live="polite">Versión 3.1 · Los resultados son probabilísticos y educativos; no constituyen diagnóstico ni reemplazan el juicio profesional.</p>';
+  const header=document.querySelector('header');(header||document.body).insertAdjacentElement(header?'afterend':'afterbegin',controls);
+  document.getElementById('audit-export').onclick=()=>{const inputs=Array.from(document.querySelectorAll('input,select,textarea')).map(e=>(e.getAttribute('aria-label')||e.id||e.name||e.type)+': '+e.value).join('\n');const text=document.body.innerText||document.body.textContent;downloadAuditText(document.title.replace(/[^\p{L}\p{N}_-]/gu,'_')+'.txt','Versión 3.1\n'+inputs+'\n\n'+text);};
+  for(const name of runNames){const original=window[name];if(typeof original!=='function')continue;window[name]=function(...args){try{setSimulationSeed(Number(document.getElementById('audit-seed').value));for(const e of document.querySelectorAll('input[type="number"],input[type="range"]'))if(!e.disabled&&e.offsetParent!==null&&(!e.value.trim()||!Number.isFinite(Number(e.value))||(e.min!==''&&Number(e.value)<Number(e.min))||(e.max!==''&&Number(e.value)>Number(e.max))))throw new Error('Revise el campo '+(e.getAttribute('aria-label')||e.id)+': el valor está fuera de su rango.');const result=original.apply(this,args);if(result&&typeof result.catch==='function')return result.then(value=>{updateAccessibleCharts();return value;}).catch(reportUserError);updateAccessibleCharts();return result;}catch(e){reportUserError(e);}};}
+  const labelFields=()=>{for(const e of document.querySelectorAll('input,select,textarea')){if(e.getAttribute('aria-label')||e.labels?.length)continue;const match=(e.id||'').match(/^(.+?)[_-](\d+)[_-](\d+)$/);e.setAttribute('aria-label',match?match[1]+': origen '+(Number(match[2])+1)+', destino '+(Number(match[3])+1):e.placeholder||e.previousElementSibling?.textContent?.trim()||e.id||'Valor configurable');}};
+  labelFields();new MutationObserver(labelFields).observe(document.body,{childList:true,subtree:true});
+  for(const chartClass of ['Chart']){const C=window[chartClass];if(C?.defaults){C.defaults.interaction.mode='index';C.defaults.interaction.intersect=false;C.defaults.plugins.tooltip.callbacks.label=ctx=>' '+ctx.dataset.label+': '+Number(ctx.parsed.y??ctx.parsed).toFixed(4);}}
+}
+
+
+'use strict';
+const $ = id => document.getElementById(id);
+const STATES = ['Muy Malo','Malo','Normal','Bueno','Muy Bueno'];
+const SC = ['var(--c0)','var(--c1)','var(--c2)','var(--c3)','var(--c4)'];
+const SC_HEX = ['#ef4444','#f97316','#eab308','#22c55e','#06b6d4'];
+
+// Default MATLAB matrix
+const P_DEFAULT = [
+  [0.60,0.25,0.10,0.04,0.01],
+  [0.20,0.50,0.20,0.08,0.02],
+  [0.05,0.15,0.60,0.15,0.05],
+  [0.02,0.08,0.20,0.50,0.20],
+  [0.01,0.04,0.10,0.25,0.60]
+];
+
+let P = P_DEFAULT.map(r=>[...r]);
+let pi0 = [10,20,40,20,10]; // initial %
+
+/* ── Tab ─────────────────────────────── */
+function showTab(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  $('tab-'+id).classList.add('active'); btn.classList.add('active');
+  if(id==='matrix') renderMatrix();
+  if(id==='mfpt') runMFPT();
+}
+
+/* ── Sync slider ─────────────────────── */
+function syncSl(rid,cid,d){ $(cid).textContent=(+$(rid).value).toFixed(d); }
+
+/* ── Helpers ─────────────────────────── */
+function fmt(v,d=2){ return (+v).toFixed(d); }
+function pct(v){ return fmt(v*100,1)+'%'; }
+function vp(val,cls){ return `<span class="vp ${cls}">${val}</span>`; }
+
+/* ── Matrix multiplication ───────────── */
+function matMul(v,M){
+  const n=v.length; const out=new Array(n).fill(0);
+  for(let j=0;j<n;j++) for(let i=0;i<n;i++) out[j]+=v[i]*M[i][j];
+  return out;
+}
+
+/* ── Matrix inverse (Gauss-Jordan) ────── */
+function matInv(M){
+  const n=M.length;
+  const A=M.map(r=>[...r]);
+  const I=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1:0));
+  for(let col=0;col<n;col++){
+    let maxR=col;
+    for(let r=col+1;r<n;r++) if(Math.abs(A[r][col])>Math.abs(A[maxR][col])) maxR=r;
+    [A[col],A[maxR]]=[A[maxR],A[col]]; [I[col],I[maxR]]=[I[maxR],I[col]];
+    const piv=A[col][col];
+    if(Math.abs(piv)<1e-12) return null;
+    for(let k=0;k<n;k++){ A[col][k]/=piv; I[col][k]/=piv; }
+    for(let r=0;r<n;r++){
+      if(r===col) continue;
+      const f=A[r][col];
+      for(let k=0;k<n;k++){ A[r][k]-=f*A[col][k]; I[r][k]-=f*I[col][k]; }
+    }
+  }
+  return I;
+}
+
+/* ── Stationary distribution ─────────── */
+function stationaryDist(P) {return stationaryDistribution(P,requireProbabilityVector(pi0.map(v=>v/100),STATES.length,"π inicial"));}
+
+/* ── MFPT calculation ─────────────────── */
+function computeMFPT(P,targetIdx){return meanFirstPassage(P,targetIdx);}
+
+/* ══════════════════════════════════════
+   CHART REGISTRY
+══════════════════════════════════════ */
+const CH={};
+function mkChart(id,cfg){
+  if(CH[id]){ CH[id].destroy(); delete CH[id]; }
+  const ctx=$(id); if(!ctx) return;
+  CH[id]=new Chart(ctx.getContext('2d'),cfg);
+  return CH[id];
+}
+const DC={
+  color:'#a3b8d2',
+  plugins:{
+    legend:{labels:{color:'#7a96b8',font:{family:'Outfit',size:11}}},
+    tooltip:{backgroundColor:'#0d1320',borderColor:'#1e2d47',borderWidth:1,
+             titleColor:'#f0f6ff',bodyColor:'#7a96b8',
+             titleFont:{family:'JetBrains Mono'},bodyFont:{family:'JetBrains Mono',size:11}}
+  },
+  scales:{
+    x:{ticks:{color:'#a3b8d2',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(30,45,71,.5)'}},
+    y:{ticks:{color:'#a3b8d2',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(30,45,71,.5)'}}
+  }
+};
+function dc(extra={}){
+  function dm(a,b){const o={...a};for(const k in b){if(b[k]&&typeof b[k]==='object'&&!Array.isArray(b[k]))o[k]=dm(a[k]||{},b[k]);else o[k]=b[k];}return o;}
+  return dm(DC,extra);
+}
+
+/* ══════════════════════════════════════
+   DIST INPUT BUILDER
+══════════════════════════════════════ */
+function buildDistInputs(){
+  const el=$('dist-inputs'); el.innerHTML='';
+  STATES.forEach((s,i)=>{
+    const row=document.createElement('div');
+    row.className='state-row';
+    row.innerHTML=`
+      <span class="state-label">
+        <span class="state-dot" style="background:${SC_HEX[i]}"></span>${s}
+      </span>
+      <div>
+        <div class="state-bar-bg">
+          <div class="state-bar-fill" id="bar-${i}" style="background:${SC_HEX[i]};width:${pi0[i]}%"></div>
+        </div>
+      </div>
+      <input type="number" id="pi-${i}" value="${pi0[i]}" min="0" max="100"
+             oninput="updatePi(${i},this.value)">
+    `;
+    el.appendChild(row);
+  });
+}
+
+function updatePi(i,val){pi0[i]=val.trim()===''?NaN:Number(val);document.getElementById('bar-'+i).style.width=(Number.isFinite(pi0[i])?Math.max(0,Math.min(100,pi0[i])):0)+'%';const total=pi0.reduce((a,b)=>a+b,0),valid=pi0.every(v=>Number.isFinite(v)&&v>=0&&v<=100)&&Math.abs(total-100)<=0.1;document.getElementById('dist-sum').textContent='Σ = '+(Number.isFinite(total)?total.toFixed(1):'dato ausente')+'% '+(valid?'✓':'⚠ debe ser 100%');document.getElementById('dist-sum').className='row-sum '+(valid?'rs-ok':'rs-bad');updateRowSums();}
+
+/* ══════════════════════════════════════
+   MATRIX RENDER & EDIT
+══════════════════════════════════════ */
+function renderMatrix(){
+  const tbl=$('mtx-table');
+  // Header
+  let html=`<thead><tr><th class="row-lbl">De \\ A</th>${STATES.map(s=>`<th>${escapeHTML(s)}</th>`).join('')}</tr></thead><tbody>`;
+  STATES.forEach((s,i)=>{
+    html+=`<tr><td class="row-lbl" style="color:${SC_HEX[i]}">${escapeHTML(s)}</td>`;
+    STATES.forEach((_,j)=>{
+      html+=`<td><input type="number" id="p-${i}-${j}" value="${fmt(P[i][j],2)}"
+             min="0" max="1" step="any" oninput="updateP(${i},${j},this.value)"></td>`;
+    });
+    html+='</tr>';
+  });
+  tbl.innerHTML=html+'</tbody>';
+  updateRowSums();
+  drawHeatmap();
+}
+
+function updateP(i,j,val){P[i][j]=val.trim()===''?NaN:Number(val);updateRowSums();if(P.every(r=>r.every(Number.isFinite)))drawHeatmap();}
+
+function updateRowSums(){
+  const el=$('row-sums'); el.innerHTML='';
+  STATES.forEach((s,i)=>{
+    const sum=P[i].reduce((a,b)=>a+b,0);
+    const ok=P[i].every(v=>Number.isFinite(v)&&v>=0&&v<=1)&&Math.abs(sum-1)<=0.001;
+    const d=document.createElement('div');
+    d.className='row-sum '+(ok?'rs-ok':'rs-bad');
+    d.style.marginBottom='5px';
+    d.innerHTML=`<span style="color:${SC_HEX[i]}">${escapeHTML(s)}</span>: Σ = ${fmt(sum,3)} ${ok?'✓':'⚠ debe ser 1.00'}`;
+    el.appendChild(d);
+  });
+ const valid=P.every(r=>r.every(v=>Number.isFinite(v)&&v>=0&&v<=1)&&Math.abs(r.reduce((a,b)=>a+b,0)-1)<=.001)&&pi0.every(v=>Number.isFinite(v)&&v>=0&&v<=100)&&Math.abs(pi0.reduce((a,b)=>a+b,0)-100)<=.1;document.querySelectorAll('[onclick="runSimulation()"],[onclick="runMFPT()"]').forEach(b=>b.disabled=!valid);
+}
+
+function resetMatrix(){P=STATES.length===5?P_DEFAULT.map(r=>r.slice()):Array.from({length:STATES.length},(_,i)=>Array.from({length:STATES.length},(_,j)=>i===j?.6:.4/(STATES.length-1)));renderMatrix();}
+
+function drawHeatmap(){
+  const data=[];
+  P.forEach((row,i)=>row.forEach((v,j)=>data.push({x:j,y:i,v})));
+  mkChart('c-heatmap',{
+    type:'scatter',
+    data:{datasets:[{
+      data:data.map(d=>({x:d.x,y:d.y})),
+      backgroundColor:data.map(d=>`rgba(16,185,129,${d.v})`),
+      pointRadius:data.map(()=>28),
+      pointStyle:'rect',
+      hoverRadius:30
+    }]},
+    options:{
+      animation:{duration:200},responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          label:ctx=>{const d=data[ctx.dataIndex];return ` P[${escapeHTML(STATES[d.y])}→${escapeHTML(STATES[d.x])}] = ${fmt(d.v,2)}`;}
+        },...DC.plugins.tooltip}
+      },
+      scales:{
+        x:{min:-.5,max:STATES.length-.5,ticks:{callback:(_,i)=>STATES[i]||'',color:'#7a96b8',font:{family:'JetBrains Mono',size:9}},grid:{color:'rgba(30,45,71,.3)'}},
+        y:{min:-.5,max:STATES.length-.5,reverse:true,ticks:{callback:(_,i)=>STATES[i]||'',color:'#7a96b8',font:{family:'JetBrains Mono',size:9}},grid:{color:'rgba(30,45,71,.3)'}}
+      }
+    }
+  });
+}
+
+/* ══════════════════════════════════════
+   SIMULATION
+══════════════════════════════════════ */
+function runSimulation(){
+  const T=+$('sl-T').value;
+  const steps=T;
+  const dt=1;  // paso_tiempo = T_total / unidades (same as MATLAB)
+  const total=pi0.reduce((a,b)=>a+b,0);
+  requireStochastic(P);let pi=requireProbabilityVector(pi0.map(v=>v/100),STATES.length,'π inicial');
+
+  const evol=[pi.slice()];
+  for(let t=0;t<steps;t++){
+    pi=matMul(pi,P);
+    evol.push(pi.slice());
+  }
+  const times=Array.from({length:steps+1},(_,i)=>+(i*dt).toFixed(3));
+  const piStat=stationaryDist(P);
+
+  // Compute MFPT for leadership guide (from Muy Malo and Malo to Bueno)
+  const targetIdx=STATES.length-1; // Bueno — same as MATLAB target_idx=4 (1-based → 3 zero-based)
+  const mfptVals=computeMFPT(P,targetIdx);
+  const othersIdx=STATES.map((_,i)=>i).filter(i=>i!==targetIdx);
+  const mfptMuyMalo=mfptVals[othersIdx.indexOf(0)];
+  const mfptMalo=STATES.length>2?mfptVals[othersIdx.indexOf(1)]:mfptMuyMalo;
+
+  // KPIs
+  $('kpi-pending').style.display='none';
+  const kpiRow=$('kpi-final-row');
+  kpiRow.innerHTML=STATES.map((s,i)=>`
+    <div class="kpi" style="border-top:3px solid ${SC_HEX[i]}">
+      <div class="kpi-label">${escapeHTML(s)}</div>
+      <div class="kpi-value" style="color:${SC_HEX[i]}">${pct(evol[steps][i])}</div>
+      <div class="kpi-sub">t=0: ${pct(evol[0][i])}</div>
+    </div>`).join('');
+
+  // Evolution table — use T axis same as MATLAB
+  $('tbody-evol').innerHTML=times.map((t,idx)=>`
+    <tr>
+      <td class="mono">${fmt(t,1)}</td>
+      ${evol[idx].map((v,i)=>`<td class="num" style="color:${SC_HEX[i]}">${pct(v)}</td>`).join('')}
+    </tr>`).join('');
+
+  // Evolution chart
+  mkChart('c-evol',{
+    type:'line',
+    data:{
+      labels:times.map(t=>fmt(t,1)),
+      datasets:STATES.map((s,i)=>({
+        label:s,data:evol.map(e=>e[i]*100),
+        borderColor:SC_HEX[i],backgroundColor:SC_HEX[i]+'22',
+        fill:false,tension:.4,pointRadius:0,borderWidth:2
+      }))
+    },
+    options:dc({
+      scales:{
+        x:{...DC.scales.x,title:{display:true,text:`Tiempo Total: ${T}`,color:'#a3b8d2'}},
+        y:{...DC.scales.y,min:0,max:100,title:{display:true,text:'% del Grupo',color:'#a3b8d2'}}
+      }
+    })
+  });
+
+  // Stationary bar
+  mkChart('c-stat',{
+    type:'bar',
+    data:{labels:STATES,datasets:[{
+      label:'Distribución Estacionaria',
+      data:piStat.map(v=>v*100),
+      backgroundColor:SC_HEX.map(c=>c+'bb'),
+      borderColor:SC_HEX,borderWidth:1,borderRadius:5
+    }]},
+    options:dc({
+      plugins:{...DC.plugins,legend:{display:false}},
+      scales:{x:{...DC.scales.x},y:{...DC.scales.y,min:0,title:{display:true,text:'%',color:'#a3b8d2'}}}
+    })
+  });
+
+  // Compare chart
+  mkChart('c-compare',{
+    type:'bar',
+    data:{
+      labels:STATES,
+      datasets:[
+        {label:'Inicial',data:evol[0].map(v=>v*100),backgroundColor:SC_HEX.map(c=>c+'55'),borderColor:SC_HEX,borderWidth:1,borderRadius:3},
+        {label:'Final (t='+fmt(T,0)+')',data:evol[steps].map(v=>v*100),backgroundColor:SC_HEX.map(c=>c+'bb'),borderColor:SC_HEX,borderWidth:1,borderRadius:3}
+      ]
+    },
+    options:dc({
+      scales:{x:{...DC.scales.x},y:{...DC.scales.y,min:0,title:{display:true,text:'%',color:'#a3b8d2'}}}
+    })
+  });
+
+  fillSimInterp(evol,times,piStat,T,steps);
+  fillLeadershipGuide(mfptMuyMalo,mfptMalo,piStat,evol,T,dt);
+}
+
+/* ── Leadership Guide — Port of MATLAB Section 9 ── */
+function fillLeadershipGuide(m1,m2,piStat,evol,T,dt){document.getElementById('leadership-card').style.display='block';document.getElementById('leadership-content').innerHTML='<p>La matriz representa una transición por '+escapeHTML(document.getElementById('rg-unit').value)+'. Se calcularon '+T+' transiciones. Tiempo medio desde '+escapeHTML(STATES[0])+' hasta '+escapeHTML(STATES.at(-1))+': '+(Number.isFinite(m1)?m1.toFixed(2):'∞ (llegada no garantizada)')+'.</p><p>Estas proyecciones describen el modelo configurado, no prueban la eficacia de una intervención ni predicen el desempeño de una persona.</p>';}
+
+/* ── Interpretation: Simulation ────────── */
+function fillSimInterp(evol,times,piStat,T,steps){const el=document.getElementById('ibox-sim');if(el){el.style.display='block';el.innerHTML='<p>Evolución analítica de '+T+' transiciones. Probabilidad final de '+escapeHTML(STATES.at(-1))+': '+pct(evol.at(-1).at(-1))+'.</p><p>'+(!piStat.details.unique?'Hay varias clases cerradas; la mezcla estacionaria depende de la distribución inicial. ':'')+(piStat.details.periodic?'Hay periodicidad; la estacionaria representa ocupación media, no convergencia puntual. ':'')+'Los resultados son condicionales a la matriz y a la unidad temporal configuradas.</p>';}}
+
+/* ══════════════════════════════════════
+   MFPT TAB
+══════════════════════════════════════ */
+function updateTargetLabel(){
+  const idx=+$('sel-target').value;
+  $('cv-target').textContent=STATES[idx];
+}
+
+function runMFPT(){
+  requireStochastic(P);requireProbabilityVector(pi0.map(v=>v/100),STATES.length,'π inicial');
+  const targetIdx=+$('sel-target').value;
+  const mfpt=computeMFPT(P,targetIdx);
+  const others=STATES.filter((_,i)=>i!==targetIdx);
+  const othersIdx=STATES.map((_,i)=>i).filter(i=>i!==targetIdx);
+  const piStat=stationaryDist(P);
+
+  // MFPT table
+  $('tbody-mfpt').innerHTML=others.map((s,k)=>{
+    const v=mfpt[k];
+    const cls=v<10?'chip-ok':v<20?'chip-warn':'chip-bad';
+    const lbl=v<10?'Rápido':v<20?'Moderado':'Lento';
+    return `<tr>
+      <td style="color:${SC_HEX[othersIdx[k]]};font-weight:700">${escapeHTML(s)}</td>
+      <td class="num mono" style="color:${SC_HEX[othersIdx[k]]}">${v===Infinity?'∞':fmt(v,2)}</td>
+      <td><span class="chip ${cls}">${lbl}: ${v<10?'< 10':v<20?'10–20':'≥ 20'} unid.</span></td>
+    </tr>`;
+  }).join('');
+
+  // Stationary table
+  $('tbody-stat').innerHTML=STATES.map((s,i)=>`
+    <tr>
+      <td style="color:${SC_HEX[i]};font-weight:700">${escapeHTML(s)}</td>
+      <td class="num mono">${fmt(piStat[i],4)}</td>
+      <td class="num mono" style="color:${SC_HEX[i]}">${pct(piStat[i])}</td>
+    </tr>`).join('');
+
+  // MFPT bar chart
+  const barData=others.map((_,k)=>mfpt[k]===Infinity?null:mfpt[k]);
+  mkChart('c-mfpt-bar',{
+    type:'bar',
+    data:{
+      labels:others,
+      datasets:[{
+        label:'MFPT',
+        data:barData,
+        backgroundColor:othersIdx.map(i=>SC_HEX[i]+'bb'),
+        borderColor:othersIdx.map(i=>SC_HEX[i]),
+        borderWidth:1,borderRadius:5
+      }]
+    },
+    options:dc({
+      indexAxis:'y',
+      plugins:{...DC.plugins,legend:{display:false}},
+      scales:{
+        x:{...DC.scales.x,title:{display:true,text:'Unidades de tiempo',color:'#a3b8d2'}},
+        y:{...DC.scales.y}
+      }
+    })
+  });
+
+  // Stationary doughnut
+  mkChart('c-stat2',{
+    type:'doughnut',
+    data:{
+      labels:STATES,
+      datasets:[{data:piStat.map(v=>+(v*100).toFixed(2)),backgroundColor:SC_HEX.map(c=>c+'cc'),borderColor:SC_HEX,borderWidth:1}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:'#7a96b8',font:{family:'Outfit',size:10}}},
+        tooltip:{...DC.plugins.tooltip,callbacks:{label:ctx=>` ${ctx.label}: ${fmt(ctx.parsed,1)}%`}}
+      },
+      cutout:'60%'
+    }
+  });
+
+  fillMFPTInterp(mfpt, others, othersIdx, piStat, targetIdx);
+}
+
+/* ── Interpretation: MFPT ──────────────── */
+function fillMFPTInterp(mfpt,others,othersIdx,piStat,targetIdx){const el=document.getElementById('ibox-mfpt');if(el){el.style.display='block';el.innerHTML='<p>Objetivo: '+escapeHTML(STATES[targetIdx])+'. El tiempo medio se expresa en '+escapeHTML(document.getElementById('rg-unit').value)+'. ∞ significa que la llegada no está garantizada desde ese origen.</p><p>'+(!piStat.details.unique?'Hay varias clases cerradas: la estacionaria depende de π inicial. ':'')+(piStat.details.periodic?'La cadena es periódica: no confundir ocupación media con convergencia temporal. ':'')+'</p>';}}
+
+/* ═══════════════════════════════════════
+   INIT
+═══════════════════════════════════════ */
+window.addEventListener('load',()=>{
+  buildDistInputs();
+  updateTargetLabel();
+});
+initializeAuditUI(["runSimulation","runMFPT","configureGroup","groupPreset","resetMatrix"]);
+</script>
+<script>window.addEventListener('load',()=>{if(!window.Chart)reportUserError(new Error('No se cargó la biblioteca de gráficos. Compruebe su conexión a internet y recargue la página.'));});</script>
+</body>
+</html>

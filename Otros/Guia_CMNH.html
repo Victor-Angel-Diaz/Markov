@@ -1,0 +1,1654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía de Usuario · CMNH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#07101f;--bg1:#0c1829;--bg2:#101f34;--bg3:#16273f;--bg4:#1c3050;
+  --border:rgba(70,130,200,.14);--border2:rgba(70,130,200,.26);
+  --t0:#eef3ff;--t1:#c4d4ee;--t2:#7d9dbf;--t3:#a4b8d0;--t4:#a4b8d0;
+  --blue:#4fa3ff;--teal:#2dd4bf;--green:#34d399;--amber:#fbbf24;
+  --rose:#fb7185;--violet:#a78bfa;--sky:#38bdf8;
+  --nav:280px;--r:9px;--ease:.22s ease;
+  --ff-head:'Times New Roman','Georgia',serif;
+  --ff-body:'Source Serif 4',serif;
+  --ff-mono:'JetBrains Mono',monospace;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--ff-body);background:var(--bg0);color:var(--t1);font-size:15px;line-height:1.75;display:flex}
+
+/* scrollbar */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:99px}
+
+/* ── NAV ── */
+nav{width:var(--nav);flex-shrink:0;background:var(--bg1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;height:100%;overflow:hidden}
+.nav-brand{padding:20px 20px 16px;border-bottom:1px solid var(--border)}
+.nav-brand .logo{font-family:var(--ff-head);font-size:15px;font-weight:800;
+  color:var(--t0);letter-spacing:-.2px;display:flex;align-items:center;gap:8px}
+.nav-brand .logo span{font-family:var(--ff-mono);font-size:10px;color:var(--blue);
+  background:rgba(79,163,255,.12);padding:2px 7px;border-radius:4px;border:1px solid rgba(79,163,255,.2)}
+.nav-brand .tagline{font-size:11px;color:var(--t3);margin-top:5px;font-family:var(--ff-mono);letter-spacing:.3px}
+
+.nav-inner{overflow-y:auto;flex:1;padding:8px 0 12px}
+.nav-group{padding:14px 16px 4px;font-size:9px;font-family:var(--ff-mono);
+  text-transform:uppercase;letter-spacing:1.2px;color:var(--t4);font-weight:600}
+.nav-link{display:flex;align-items:center;gap:9px;padding:7px 16px;
+  cursor:pointer;font-size:12.5px;color:var(--t2);font-weight:500;
+  transition:all var(--ease);border-left:2px solid transparent;
+  font-family:var(--ff-head);letter-spacing:.1px}
+.nav-link:hover{color:var(--t0);background:rgba(79,163,255,.05)}
+.nav-link.on{color:var(--blue);background:rgba(79,163,255,.09);border-left-color:var(--blue)}
+.nav-link .ic{font-size:13px;flex-shrink:0;width:18px;text-align:center}
+.nav-link .badge{margin-left:auto;font-size:9px;font-family:var(--ff-mono);
+  background:rgba(79,163,255,.13);color:var(--blue);padding:1px 6px;
+  border-radius:99px;border:1px solid rgba(79,163,255,.18)}
+
+.nav-foot{padding:12px 16px;border-top:1px solid var(--border);font-size:10.5px;
+  color:var(--t4);line-height:1.5;font-family:var(--ff-mono)}
+
+/* ── MAIN ── */
+.main{flex:1;overflow-y:auto;height:100%}
+.page{display:none;padding:44px 56px 72px;max-width:980px;animation:fup .2s ease}
+.page.on{display:block}
+@keyframes fup{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── PAGE HEADER ── */
+.ph-tag{font-family:var(--ff-mono);font-size:10px;text-transform:uppercase;
+  letter-spacing:1.2px;color:var(--blue);margin-bottom:10px}
+.ph-title{font-family:var(--ff-head);font-size:30px;font-weight:800;color:var(--t0);
+  line-height:1.15;margin-bottom:14px}
+.ph-lead{font-size:15.5px;color:var(--t2);line-height:1.8;max-width:700px;
+  border-left:3px solid var(--blue);padding-left:16px;margin-bottom:36px;
+  font-style:italic}
+
+/* ── SECTION ── */
+.sec{margin-bottom:44px}
+.sec-title{font-family:var(--ff-head);font-size:16px;font-weight:700;color:var(--t0);
+  margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+p{margin-bottom:13px;color:var(--t1)}
+p:last-child{margin-bottom:0}
+ul,ol{padding-left:20px;color:var(--t1)}
+li{margin-bottom:6px;line-height:1.7}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
+  padding:20px 24px;margin-bottom:14px}
+.card-head{font-family:var(--ff-head);font-size:13.5px;font-weight:700;color:var(--t0);
+  margin-bottom:9px;display:flex;align-items:center;gap:7px}
+
+/* ── CODE ── */
+pre.codeblock{background:#050d1a;border:1px solid var(--border2);border-radius:8px;
+  padding:14px 18px;font-family:var(--ff-mono);font-size:12.5px;color:var(--teal);
+  line-height:1.65;margin:10px 0 14px;overflow-x:auto;white-space:pre}
+pre.codeblock .cm{color:var(--t3);font-style:italic}
+pre.codeblock .ck{color:var(--amber)}
+code{font-family:var(--ff-mono);font-size:12px;color:var(--teal);
+  background:rgba(45,212,191,.09);padding:1px 5px;border-radius:4px}
+
+/* ── CALLOUTS ── */
+.call{border-radius:8px;padding:14px 18px;margin:14px 0;border-left:3px solid;font-size:14px}
+.call-title{font-family:var(--ff-head);font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.call.info{background:rgba(79,163,255,.07);border-color:var(--blue)}
+.call.info .call-title{color:var(--blue)}
+.call.ok{background:rgba(52,211,153,.07);border-color:var(--green)}
+.call.ok .call-title{color:var(--green)}
+.call.warn{background:rgba(251,191,36,.07);border-color:var(--amber)}
+.call.warn .call-title{color:var(--amber)}
+.call.danger{background:rgba(251,113,133,.07);border-color:var(--rose)}
+.call.danger .call-title{color:var(--rose)}
+.call.violet{background:rgba(167,139,250,.07);border-color:var(--violet)}
+.call.violet .call-title{color:var(--violet)}
+
+/* ── STEPS ── */
+.steps{display:flex;flex-direction:column;gap:0}
+.step{display:grid;grid-template-columns:30px 1fr;gap:16px;
+  padding:16px 0;border-bottom:1px solid var(--border);align-items:start}
+.step:last-child{border-bottom:none}
+.sn{width:26px;height:26px;border-radius:50%;background:rgba(79,163,255,.13);
+  border:1px solid rgba(79,163,255,.28);display:flex;align-items:center;
+  justify-content:center;font-family:var(--ff-mono);font-size:10.5px;
+  font-weight:700;color:var(--blue);flex-shrink:0;margin-top:2px}
+.sb .st{font-weight:600;color:var(--t0);margin-bottom:5px;
+  font-family:var(--ff-head);font-size:14px}
+
+/* ── SEMAPHORE ── */
+.sem{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+.sr{display:flex;align-items:flex-start;gap:12px;padding:11px 16px;
+  border-radius:7px;font-size:13.5px}
+.sr.ok  {background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.18)}
+.sr.warn{background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.18)}
+.sr.bad {background:rgba(251,113,133,.06);border:1px solid rgba(251,113,133,.18)}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.sr.ok   .dot{background:var(--green)}
+.sr.warn .dot{background:var(--amber)}
+.sr.bad  .dot{background:var(--rose)}
+.sr strong{display:block;font-weight:600;color:var(--t0);
+  font-family:var(--ff-head);margin-bottom:2px}
+
+/* ── TABLE ── */
+table.gt{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}
+table.gt th{text-align:left;padding:8px 12px;font-family:var(--ff-mono);
+  font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--t3);
+  border-bottom:1px solid var(--border2);font-weight:600}
+table.gt td{padding:9px 12px;border-bottom:1px solid var(--border);
+  color:var(--t1);vertical-align:top;line-height:1.6}
+table.gt tr:last-child td{border-bottom:none}
+table.gt .m{font-family:var(--ff-mono);font-size:12px}
+.ok-t{color:var(--green);font-weight:600}
+.warn-t{color:var(--amber);font-weight:600}
+.bad-t{color:var(--rose);font-weight:600}
+
+/* ── PILLS ── */
+.pill{display:inline-block;font-size:10px;font-family:var(--ff-mono);
+  font-weight:700;text-transform:uppercase;letter-spacing:.3px;
+  padding:2px 7px;border-radius:99px;vertical-align:middle;margin:0 2px}
+.pb  {background:rgba(79,163,255,.12);color:var(--blue);  border:1px solid rgba(79,163,255,.22)}
+.pg  {background:rgba(52,211,153,.12);color:var(--green); border:1px solid rgba(52,211,153,.22)}
+.pa  {background:rgba(251,191,36,.12);color:var(--amber); border:1px solid rgba(251,191,36,.22)}
+.pr  {background:rgba(251,113,133,.12);color:var(--rose); border:1px solid rgba(251,113,133,.22)}
+.pt  {background:rgba(45,212,191,.12);color:var(--teal);  border:1px solid rgba(45,212,191,.22)}
+.pv  {background:rgba(167,139,250,.12);color:var(--violet);border:1px solid rgba(167,139,250,.22)}
+
+/* ── MATRIX DEMO ── */
+.mxdemo{display:inline-block;background:var(--bg2);border:1px solid var(--border);
+  border-radius:8px;padding:14px;margin:10px 0}
+.mxrow{display:flex;gap:3px;margin-bottom:3px}
+.mxrow:last-child{margin-bottom:0}
+.mc{width:72px;height:38px;border-radius:5px;display:flex;align-items:center;
+  justify-content:center;font-family:var(--ff-mono);font-size:12.5px;font-weight:700}
+.mc-d{background:rgba(79,163,255,.13);color:var(--blue)}
+.mc-l{background:rgba(52,211,153,.10);color:var(--green)}
+.mc-m{background:rgba(251,191,36,.10);color:var(--amber)}
+.mc-h{background:rgba(251,113,133,.10);color:var(--rose)}
+.mxlbl{font-family:var(--ff-mono);font-size:10px;color:var(--t3);margin-top:6px;text-align:center}
+
+/* ── FORMULA ── */
+.formula{background:#050d1a;border:1px solid var(--border2);border-radius:8px;
+  padding:16px 22px;margin:12px 0;text-align:center;font-family:var(--ff-mono);
+  font-size:14.5px;color:var(--teal);letter-spacing:.4px}
+.formula .fc{font-size:11px;color:var(--t3);margin-top:7px;font-family:var(--ff-body);
+  font-style:italic;letter-spacing:0}
+
+/* ── RESULT CARDS ── */
+.rcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:10px;margin:14px 0}
+.rc{background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  padding:14px 16px;border-top:3px solid}
+.rc.b{border-top-color:var(--blue)}
+.rc.g{border-top-color:var(--green)}
+.rc.a{border-top-color:var(--amber)}
+.rc.r{border-top-color:var(--rose)}
+.rc.t{border-top-color:var(--teal)}
+.rc.v{border-top-color:var(--violet)}
+.rc-lbl{font-size:9.5px;font-family:var(--ff-mono);text-transform:uppercase;
+  letter-spacing:.6px;color:var(--t3);margin-bottom:4px}
+.rc-val{font-family:var(--ff-head);font-size:22px;font-weight:800;color:var(--t0);
+  line-height:1;margin-bottom:3px}
+.rc-sub{font-size:11.5px;color:var(--t3)}
+
+/* ── SCENARIO ── */
+.scen{background:var(--bg2);border:1px solid var(--border);border-radius:9px;
+  overflow:hidden;margin:14px 0}
+.scen-head{background:rgba(79,163,255,.07);border-bottom:1px solid var(--border);
+  padding:10px 16px;display:flex;align-items:center;gap:9px}
+.s-tag{font-family:var(--ff-mono);font-size:9px;text-transform:uppercase;
+  letter-spacing:.5px;background:rgba(79,163,255,.14);color:var(--blue);
+  padding:2px 7px;border-radius:4px;font-weight:700;border:1px solid rgba(79,163,255,.2)}
+.s-ttl{font-size:13px;font-weight:600;color:var(--t0);font-family:var(--ff-head)}
+.scen-body{padding:14px 18px;font-size:13.5px}
+
+/* ── REC BOX ── */
+.recbox{background:rgba(167,139,250,.05);border:1px solid rgba(167,139,250,.18);
+  border-radius:9px;padding:16px 20px;margin:12px 0}
+.recbox-title{font-family:var(--ff-head);font-size:13px;font-weight:700;
+  color:var(--violet);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+
+/* ── TIMELINE ── */
+.tl{position:relative;padding-left:22px;border-left:2px solid var(--border2);margin:18px 0}
+.tl-item{position:relative;padding:0 0 20px 20px}
+.tl-item:last-child{padding-bottom:0}
+.tl-dot{position:absolute;left:-30px;top:4px;width:13px;height:13px;
+  border-radius:50%;border:2px solid var(--bg1)}
+.tl-dot.b{background:var(--blue)}
+.tl-dot.g{background:var(--green)}
+.tl-dot.a{background:var(--amber)}
+.tl-dot.t{background:var(--teal)}
+.tl-dot.v{background:var(--violet)}
+.tl-lbl{font-weight:600;color:var(--t0);font-family:var(--ff-head);font-size:14px;margin-bottom:3px}
+.tl-desc{font-size:13.5px;color:var(--t2)}
+
+/* ── MODULE GRID ── */
+.mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));
+  gap:10px;margin:18px 0}
+.mcard{background:var(--bg2);border:1px solid var(--border);border-radius:9px;
+  padding:15px 16px;cursor:pointer;transition:all var(--ease);border-top:2px solid transparent}
+.mcard:hover{border-top-color:var(--blue);background:var(--bg3)}
+.mc-ic{font-size:20px;margin-bottom:7px}
+.mc-nm{font-family:var(--ff-head);font-size:12.5px;font-weight:700;color:var(--t0);margin-bottom:3px}
+.mc-ds{font-size:11px;color:var(--t3);line-height:1.5}
+
+hr.div{border:none;border-top:1px solid var(--border);margin:30px 0}
+.elabel{font-size:10px;font-family:var(--ff-mono);text-transform:uppercase;
+  letter-spacing:.5px;color:var(--teal);margin-bottom:4px;font-weight:600}
+/* ═══ ACCESIBILIDAD Y ENTREGA · v3.1 ═══ */
+:root { --tr:.2s ease; }
+:focus-visible { outline:3px solid #3b82f6;outline-offset:3px; }
+.audit-controls { padding:12px 20px;margin:12px auto;max-width:1400px;border:1px solid currentColor;border-radius:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font:inherit; }
+.audit-controls input { width:130px; }
+.audit-controls p { flex-basis:100%;margin:0;font-size:14px;line-height:1.6; }
+button,.tab-btn,.nav-link,input[type=number],select { min-height:44px; }
+.preset-chip { font:inherit; }
+table { max-width:100%; }
+canvas { max-width:100%; }
+@media(max-width:799px) {
+  .audit-controls { margin:8px;padding:12px; }
+  .grid,.grid-2,.layout,.main-grid,.kpi-row,.metrics-row { grid-template-columns:minmax(0,1fr)!important; }
+  .card,.panel { min-width:0; }
+  .tab-bar,.tabs,.nav-tabs { overflow-x:auto; }
+  .matrix-table { overflow-x:auto;max-width:100%; }
+}
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important;transition:none!important;scroll-behavior:auto!important; } }
+
+.nav-link{border:0;border-left:2px solid transparent;text-align:left;background:transparent;width:100%;font:inherit;}@media(max-width:799px){html,body{height:auto;overflow:auto}body{display:block}nav{width:100%;height:auto}.nav-inner{display:flex;overflow-x:auto;padding:8px}.nav-group,.nav-foot{display:none}.nav-link{width:auto;flex:0 0 auto}.main{height:auto;overflow:visible}.page{padding:24px 16px;max-width:100%}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <div class="logo">CMNH <span>v8</span></div>
+    <div class="tagline">Guía completa de usuario</div>
+  </div>
+  <div class="nav-inner">
+    <div class="nav-group">Inicio</div>
+    <button type="button" class="nav-link on" onclick="go('intro',this)"><span class="ic">🏠</span>Introducción y conceptos</button>
+    <button type="button" class="nav-link" onclick="go('config',this)"><span class="ic">⚙️</span>Configuración global</button>
+
+    <div class="nav-group">Módulos</div>
+    <button type="button" class="nav-link" onclick="go('nohom',this)"><span class="ic">📈</span>No Homogéneo<span class="badge">Tab 1</span></button>
+    <button type="button" class="nav-link" onclick="go('cov',this)"><span class="ic">🔬</span>Covariables<span class="badge">Tab 2</span></button>
+    <button type="button" class="nav-link" onclick="go('hier',this)"><span class="ic">🧬</span>Jerárquico MCMC<span class="badge">Tab 3</span></button>
+    <button type="button" class="nav-link" onclick="go('pred',this)"><span class="ic">🎯</span>Predicción individual<span class="badge">Tab 4</span></button>
+    <button type="button" class="nav-link" onclick="go('ctmc',this)"><span class="ic">⏱️</span>Tiempo continuo<span class="badge">Tab 5</span></button>
+
+    <div class="nav-group">Validación</div>
+    <button type="button" class="nav-link" onclick="go('tests',this)"><span class="ic">🧪</span>Tests estadísticos</button>
+
+    <div class="nav-group">Referencia</div>
+    <button type="button" class="nav-link" onclick="go('limites',this)"><span class="ic">⚠️</span>Limitaciones y cautelas</button>
+    <button type="button" class="nav-link" onclick="go('refs',this)"><span class="ic">📚</span>Referencias</button>
+    <button type="button" class="nav-link" onclick="go('glosario',this)"><span class="ic">📖</span>Glosario</button>
+  </div>
+  <div class="nav-foot">Herramienta educativa y exploratoria.<br>No reemplaza criterio clínico.</div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- ════════════════════════════════════
+     INTRO
+════════════════════════════════════ -->
+<div id="pg-intro" class="page on">
+  <div class="ph-tag">Guía de usuario · CMNH v8</div>
+  <h1 class="ph-title">Cadenas de Markov No Homogéneas<br>en Psicología Clínica</h1>
+  <p class="ph-lead">Esta guía explica en detalle cada módulo de la herramienta: qué calcula, cómo ingresar los datos, cómo interpretar cada resultado y qué hacer cuando los resultados son desfavorables o demasiado imprecisos para tomar decisiones.</p>
+
+  <div class="sec">
+    <div class="sec-title">¿Qué hace esta herramienta?</div>
+    <p>La herramienta modela cómo los pacientes se desplazan entre estados clínicos discretos a lo largo del tiempo, y analiza si una intervención terapéutica modifica esa dinámica de manera estadísticamente sostenible. A diferencia de comparar promedios antes y después del tratamiento, aquí se captura la <strong>trayectoria completa</strong> de cada paciente: qué probabilidad hay de que un paciente en estado "Depresión severa" pase a "Depresión leve" la próxima semana, y cómo esa probabilidad cambia durante el tratamiento.</p>
+    <p>Esto permite responder preguntas que los análisis clásicos no pueden: ¿en qué semana el tratamiento tiene su mayor impacto? ¿Qué tan probable es que un paciente que se recupera recaiga? ¿Los pacientes más jóvenes transitan más rápido entre estados?</p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">La propiedad de Markov — suposición central</div>
+    <p>Todos los módulos asumen que para predecir el próximo estado de un paciente, <em>solo importa el estado actual</em>. No importa cuánto tiempo lleva ahí ni por qué caminos llegó. Esta es la <strong>propiedad de Markov de primer orden</strong>.</p>
+    <div class="call info">
+      <div class="call-title">Ejemplo práctico</div>
+      Si un paciente está en "Depresión leve" esta semana, la probabilidad de que pase a "Recuperado" la próxima semana es la misma, independientemente de si llegó desde "Depresión severa" hace dos semanas o si lleva ocho semanas en "Depresión leve". Si en sus datos clínicos esto <em>no</em> se cumple (por ejemplo, si los pacientes crónicos tienen dinámicas distintas a los recién deteriorados), los tests de validación lo detectarán.
+    </div>
+    <p>La herramienta incluye tres tests automáticos para verificar esta suposición. Deben revisarse <strong>antes</strong> de interpretar cualquier resultado sustantivo.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Los cinco módulos</div>
+    <div class="mgrid">
+      <div class="mcard" onclick="go('nohom',document.querySelector('[onclick*=nohom]'))">
+        <div class="mc-ic">📈</div>
+        <div class="mc-nm">No Homogéneo</div>
+        <div class="mc-ds">Evolución poblacional y efecto temporal del tratamiento</div>
+      </div>
+      <div class="mcard" onclick="go('cov',document.querySelector('[onclick*=cov]'))">
+        <div class="mc-ic">🔬</div>
+        <div class="mc-nm">Covariables</div>
+        <div class="mc-ds">¿Qué características del paciente predicen las transiciones?</div>
+      </div>
+      <div class="mcard" onclick="go('hier',document.querySelector('[onclick*=hier]'))">
+        <div class="mc-ic">🧬</div>
+        <div class="mc-nm">Jerárquico MCMC</div>
+        <div class="mc-ds">Estimación bayesiana con incertidumbre explícita</div>
+      </div>
+      <div class="mcard" onclick="go('pred',document.querySelector('[onclick*=pred]'))">
+        <div class="mc-ic">🎯</div>
+        <div class="mc-nm">Predicción individual</div>
+        <div class="mc-ds">Pronóstico para un paciente nuevo con pocos datos propios</div>
+      </div>
+      <div class="mcard" onclick="go('ctmc',document.querySelector('[onclick*=ctmc]'))">
+        <div class="mc-ic">⏱️</div>
+        <div class="mc-nm">Tiempo continuo</div>
+        <div class="mc-ds">Para datos con tiempos de permanencia exactos e irregulares</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Flujo de trabajo recomendado</div>
+    <div class="tl">
+      <div class="tl-item"><div class="tl-dot b"></div>
+        <div class="tl-lbl">1 · Definir estados clínicos</div>
+        <div class="tl-desc">En el panel "⚙️ Configurar Estados" (parte superior). Ordenar de peor a mejor. Esta configuración es global y afecta todos los módulos.</div>
+      </div>
+      <div class="tl-item"><div class="tl-dot t"></div>
+        <div class="tl-lbl">2 · Módulo No Homogéneo (Tab 1)</div>
+        <div class="tl-desc">Ingresar secuencias pre y post tratamiento → revisar test CK y Raftery → interpretar matrices y evolución.</div>
+      </div>
+      <div class="tl-item"><div class="tl-dot v"></div>
+        <div class="tl-lbl">3 · Covariables (Tab 2) — opcional</div>
+        <div class="tl-desc">Si dispone de variables como edad, severidad o adherencia, úselas para identificar qué perfil de paciente transita con más facilidad.</div>
+      </div>
+      <div class="tl-item"><div class="tl-dot a"></div>
+        <div class="tl-lbl">4 · Jerárquico MCMC (Tab 3)</div>
+        <div class="tl-desc">Para cuantificar incertidumbre y obtener distribuciones posteriores. Verificar convergencia de trazas antes de usar los resultados.</div>
+      </div>
+      <div class="tl-item"><div class="tl-dot g"></div>
+        <div class="tl-lbl">5 · Predicción individual (Tab 4)</div>
+        <div class="tl-desc">Solo tiene sentido tras ejecutar el módulo jerárquico. Para pronóstico de paciente nuevo con historial corto.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Cuándo no usar esta herramienta</div>
+    <div class="call danger">
+      <div class="call-title">Situaciones de uso inapropiado</div>
+      <ul>
+        <li>Con <strong>menos de 5–8 pacientes en algún estado</strong>: las matrices tendrán tanta incertidumbre que los resultados serán numéricamente inestables.</li>
+        <li>Cuando los <strong>estados no son mutuamente excluyentes</strong>: un paciente no puede estar en dos estados simultáneamente. Si su clasificación clínica lo permite, el modelo no aplica sin redefinir estados.</li>
+        <li>Para <strong>tomar decisiones clínicas individuales directas</strong>: la herramienta modela poblaciones y tendencias estadísticas, no prescripciones para un individuo.</li>
+        <li>Si los <strong>tests de validación dan rojo y no puede corregirlo</strong> redefiniendo estados: las predicciones de evolución y los resultados de los módulos de inferencia no son confiables.</li>
+        <li>Cuando las <strong>observaciones no son en intervalos regulares</strong> y las diferencias de tiempo importan: use el módulo CTMC (Tab 5) en ese caso.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     CONFIG
+════════════════════════════════════ -->
+<div id="pg-config" class="page">
+  <div class="ph-tag">Configuración global</div>
+  <h1 class="ph-title">Configuración de Estados Clínicos</h1>
+  <p class="ph-lead">La definición de estados es la decisión más crítica del análisis. Un error aquí invalida todos los módulos, independientemente de la cantidad o calidad de los datos.</p>
+
+  <div class="sec">
+    <div class="sec-title">Cómo acceder y configurar los estados</div>
+    <div class="steps">
+      <div class="step">
+        <div class="sn">1</div>
+        <div class="sb">
+          <div class="st">Pulsar "⚙️ Configurar Estados" en la barra superior</div>
+          <p>El panel de configuración permite ajustar el número de estados (entre 2 y 8) mediante el slider, y el nombre de cada uno en los campos editables que aparecen.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="sn">2</div>
+        <div class="sb">
+          <div class="st">Ajustar el slider de número de estados (2–8)</div>
+          <p>Al mover el slider, el panel genera automáticamente el número correspondiente de campos de texto. El valor por defecto es 3 estados.</p>
+          <div class="call warn">
+            <div class="call-title">Número de estados y tamaño de muestra</div>
+            Más estados requieren más datos. Con 3 estados, cada fila de la matriz de transición tiene 3 valores y necesita al menos 15–20 transiciones observadas desde ese estado de origen. Con 5 estados, necesita 25–40 por fila. Menos datos producen matrices escasas con ceros artificiales.
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="sn">3</div>
+        <div class="sb">
+          <div class="st">Nombrar cada estado — de peor a mejor</div>
+          <p>El <strong>primer estado (índice 0)</strong> debe ser el peor estado clínico. El <strong>último estado</strong> debe ser el objetivo de mejora o recuperación. Este orden es obligatorio: afecta los cálculos de "delta de recuperación", las interpretaciones automáticas y los colores en los gráficos (rojo = 0, verde = último).</p>
+          <div class="elabel">✓ Correcto — 3 estados</div>
+          <pre class="codeblock">Estado 1: Depresión severa     <span class="cm">← índice 0, el peor</span>
+Estado 2: Depresión leve       <span class="cm">← índice 1, intermedio</span>
+Estado 3: Recuperado           <span class="cm">← índice 2, el objetivo</span></pre>
+          <div class="elabel">✗ Incorrecto</div>
+          <pre class="codeblock">Estado 1: Recuperado           <span class="cm">← invertido: el mejor primero</span>
+Estado 2: Depresión severa</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="sn">4</div>
+        <div class="sb">
+          <div class="st">Pulsar "Guardar Configuración"</div>
+          <p>La configuración se aplica globalmente. Las demás pestañas se actualizan automáticamente. Si modifica los estados después de haber ingresado datos en otros módulos, debe volver a ejecutar los análisis.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Formato de secuencias de observación</div>
+    <p>En todos los módulos de tiempo discreto (Tabs 1–4), los datos se ingresan como secuencias de <strong>índices numéricos</strong> de estado, uno por período de observación. El identificador de paciente va al inicio, separado por dos puntos.</p>
+    <div class="elabel">Formato estándar</div>
+    <pre class="codeblock">P1: 0, 0, 1, 1, 2, 2, 2
+P2: 0, 1, 0, 1, 2, 2
+P3: 0, 0, 0, 1, 1, 2</pre>
+    <p>Cada número es una observación en un período (semana, sesión, mes — lo que defina su diseño). Las secuencias pueden tener distinta longitud entre pacientes. El índice 0 corresponde al primer estado definido, 1 al segundo, etc.</p>
+
+    <table class="gt">
+      <thead><tr><th>Regla</th><th>Detalle</th></tr></thead>
+      <tbody>
+        <tr><td>Separador de valores</td><td>Coma y espacio: <code>0, 1, 2</code></td></tr>
+        <tr><td>Separador de ID y secuencia</td><td>Dos puntos: <code>P1: 0, 1, 2</code></td></tr>
+        <tr><td>Longitud mínima por secuencia</td><td>Al menos 3 observaciones (2 transiciones). Se recomienda ≥ 6.</td></tr>
+        <tr><td>Número mínimo de secuencias</td><td>Tab 1: 2 por fase · Tab 3: 3 pacientes · Tab 4: 1 (más prior del Tab 3)</td></tr>
+        <tr><td>Índices fuera de rango</td><td>Son ignorados con advertencia. Verifique que no use índices mayores a (N_estados − 1).</td></tr>
+      </tbody>
+    </table>
+
+    <div class="call warn">
+      <div class="call-title">Intervalos de observación irregulares</div>
+      Si algunas evaluaciones se realizaron cada semana y otras cada mes, los módulos de tiempo discreto (Tabs 1–4) <strong>no son apropiados</strong> porque asumen que todos los períodos son equivalentes. Use el módulo CTMC (Tab 5) que trabaja con duraciones exactas de permanencia.
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     NO HOMOGÉNEO
+════════════════════════════════════ -->
+<div id="pg-nohom" class="page">
+  <div class="ph-tag">Módulo 1 · Tab "⏱️ No Homogénea"</div>
+  <h1 class="ph-title">Cadenas de Markov No Homogéneas en Tiempo Discreto</h1>
+  <p class="ph-lead">Modela cómo las probabilidades de transición entre estados clínicos cambian semana a semana durante el tratamiento, y estima cuánto de ese cambio es atribuible a la intervención.</p>
+
+  <div class="sec">
+    <div class="sec-title">Fundamento conceptual</div>
+    <p>Una cadena homogénea asume que P(semana 1) = P(semana 12): la probabilidad de mejorar es la misma al inicio que al final del tratamiento. La cadena no homogénea relaja esto, dejando que la probabilidad varíe según una función temporal ajustada a los datos.</p>
+    <div class="formula">
+      P(t) = (1 − f(t)) · P_base + f(t) · P_trat
+      <div class="fc">f(t) ∈ [0,1] es la función de efecto temporal. P_base = dinámica sin tratamiento. P_trat = dinámica con efecto máximo.</div>
+    </div>
+    <p>La herramienta estima P_base de la fase pre-tratamiento, P_trat de las semanas finales de la fase de intervención, y ajusta por máxima verosimilitud la función f(t) que mejor reproduce las transiciones observadas.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Modo Simulación vs. Modo Datos</div>
+    <p>El módulo tiene dos modos de operación seleccionables con los botones "🎲 Simulación" / "📋 Datos":</p>
+    <table class="gt">
+      <thead><tr><th>Modo</th><th>Para qué sirve</th><th>Cuándo usarlo</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>🎲 Simulación</strong></td>
+          <td>Genera cohortes sintéticas a partir de matrices configuradas manualmente mediante sliders</td>
+          <td>Exploración conceptual, diseño de estudios, docencia, validación de la herramienta</td>
+        </tr>
+        <tr>
+          <td><strong>📋 Datos</strong></td>
+          <td>Estima todos los parámetros a partir de secuencias reales de pacientes</td>
+          <td>Análisis de datos reales de investigación clínica. <strong>Único modo válido para investigación.</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Modo Datos: parámetros e ingreso de secuencias</div>
+    <div class="steps">
+      <div class="step">
+        <div class="sn">1</div>
+        <div class="sb">
+          <div class="st">Ingresar secuencias pre-tratamiento (caja superior)</div>
+          <p>Son las observaciones de cada paciente <em>antes</em> de iniciar la intervención: evaluaciones de línea base, registros históricos o período de espera activa. La herramienta las usa para estimar <strong>P_base</strong>, la dinámica de la condición sin tratamiento.</p>
+          <div class="call warn">
+            <div class="call-title">Calidad de la línea base</div>
+            Si todos los pacientes están en estado 0 durante toda la línea base, P_base quedará sesgada hacia "nadie mejora sin tratamiento", lo que inflará artificialmente el efecto del tratamiento. Se recomienda al menos 4–6 observaciones por paciente con algo de variabilidad entre estados.
+          </div>
+          <div class="elabel">Ejemplo — Fase pre-tratamiento (8 observaciones)</div>
+          <pre class="codeblock">P1: 0, 0, 1, 0, 1, 0, 0, 1
+P2: 0, 1, 1, 2, 1, 1, 0, 1
+P3: 0, 0, 0, 1, 1, 0, 1, 1
+P4: 1, 0, 1, 1, 0, 0, 1, 0</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="sn">2</div>
+        <div class="sb">
+          <div class="st">Ingresar secuencias durante el tratamiento (caja inferior)</div>
+          <p>Son las observaciones durante la intervención activa. No es obligatorio que sean los mismos pacientes de la fase basal (puede ser una cohorte histórica vs. una cohorte de tratamiento). La longitud puede variar entre pacientes. La herramienta usa las últimas observaciones de cada paciente para estimar <strong>P_trat</strong>.</p>
+          <div class="elabel">Ejemplo — Fase tratamiento (longitud variable)</div>
+          <pre class="codeblock">P1: 0, 0, 1, 1, 2, 2, 2, 2, 2, 2
+P2: 0, 1, 1, 2, 1, 2, 2, 2, 2, 2, 2, 2
+P3: 0, 0, 1, 1, 1, 2, 2, 2, 2, 2
+P4: 1, 1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="sn">3</div>
+        <div class="sb">
+          <div class="st">El modelo temporal se selecciona automáticamente por AIC (a partir de v8)</div>
+          <p>Al ejecutar el análisis en modo Datos, la herramienta ajusta <strong>los tres modelos simultáneamente</strong> y selecciona el de menor AIC. El dropdown visual se sincroniza al resultado. Los KPIs de parámetros y los tests de validación usan siempre este mismo modelo, garantizando coherencia interna total.</p>
+          <table class="gt">
+            <thead><tr><th>Modelo</th><th>Forma de f(t)</th><th>KPIs que muestra</th><th>Cuándo corresponde clínicamente</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="pill pv">Sigmoide</span></td>
+                <td>Latencia → aceleración → meseta</td>
+                <td>Punto de inflexión (U.T.) + Velocidad <em>k</em></td>
+                <td>Farmacoterapia antidepresiva, TCC larga. Efecto con retardo antes de acelerarse.</td>
+              </tr>
+              <tr>
+                <td><span class="pill pt">Exponencial</span></td>
+                <td>Impacto inmediato → desaceleración</td>
+                <td>Velocidad de decaimiento <em>k</em></td>
+                <td>Intervención en crisis, psicoeducación intensiva. Efecto máximo en primeras U.T.</td>
+              </tr>
+              <tr>
+                <td><span class="pill pb">Lineal</span></td>
+                <td>Incremento constante</td>
+                <td>Tasa de incremento (1/rampa)</td>
+                <td>Sin evidencia de aceleración ni desaceleración. Opción más parsimoniosa.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="call ok">
+            <div class="call-title">La selección automática garantiza coherencia entre todos los resultados</div>
+            El mismo modelo ganador por AIC es usado para: calcular los KPIs de parámetros, simular la evolución poblacional y construir los valores esperados del Test CK. El título del Test CK en la herramienta indica explícitamente qué modelo se usó (ej. <em>"① Test χ² — modelo <strong>Lineal</strong>"</em>). No es posible que los tests usen un modelo distinto al reportado en la tabla de comparación.
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="sn">4</div>
+        <div class="sb">
+          <div class="st">Pulsar "▶ Estimar desde datos"</div>
+          <p>La herramienta: (a) estima P_base y P_trat, (b) ajusta la función temporal por MLE, (c) simula la evolución poblacional con bootstrap de 150 remuestras, (d) ejecuta automáticamente el test Chapman-Kolmogorov y el test de Raftery.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Interpretar: KPIs principales</div>
+    <p>Cuatro KPIs resumen el análisis y aparecen inmediatamente tras la ejecución. Los KPIs de parámetros son <strong>dinámicos</strong>: su contenido varía según el modelo ganador por AIC, que se selecciona automáticamente.</p>
+
+    <div class="rcgrid">
+      <div class="rc g">
+        <div class="rc-lbl">% Recuperados</div>
+        <div class="rc-val">68.4%</div>
+        <div class="rc-sub">Proporción predicha en el último U.T. del horizonte, bajo el modelo NH ajustado</div>
+      </div>
+      <div class="rc v">
+        <div class="rc-lbl">Modelo (mejor AIC)</div>
+        <div class="rc-val" style="font-size:1rem">Sigmoide</div>
+        <div class="rc-sub">El dropdown visual se sincroniza al ejecutar. Usado en KPIs y tests.</div>
+      </div>
+      <div class="rc b">
+        <div class="rc-lbl">Param. 1 — depende del modelo</div>
+        <div class="rc-val">7 U.T.</div>
+        <div class="rc-sub"><em>Sigmoide:</em> Punto de inflexión (U.T.). <em>Exponencial y Lineal:</em> oculto.</div>
+      </div>
+      <div class="rc t">
+        <div class="rc-lbl">Param. 2 — depende del modelo</div>
+        <div class="rc-val">0.502</div>
+        <div class="rc-sub"><em>Sigmoide:</em> Velocidad k. <em>Exponencial:</em> Decaimiento k. <em>Lineal:</em> Tasa incremento.</div>
+      </div>
+    </div>
+
+    <table class="gt" style="margin-top:12px">
+      <thead><tr><th>Modelo ganador</th><th>KPI Param. 1</th><th>KPI Param. 2</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="pill pv">Sigmoide</span></td>
+          <td>Punto de inflexión (U.T.) — U.T. de máxima aceleración</td>
+          <td>Velocidad de cambio <em>k</em> — mayor k = transición más abrupta</td>
+        </tr>
+        <tr>
+          <td><span class="pill pt">Exponencial</span></td>
+          <td>— (oculto)</td>
+          <td>Velocidad de decaimiento <em>k</em> — mayor k = efecto inicial más rápido</td>
+        </tr>
+        <tr>
+          <td><span class="pill pb">Lineal</span></td>
+          <td>— (oculto)</td>
+          <td>Tasa de incremento = 1 / duración de la rampa (en U.T.)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="rcgrid" style="margin-top:12px">
+      <div class="rc a">
+        <div class="rc-lbl">Δ Recuperación</div>
+        <div class="rc-val">+31 pp</div>
+        <div class="rc-sub">Puntos porcentuales de diferencia vs. la proyección sin tratamiento (P_base constante). Siempre presente.</div>
+      </div>
+    </div>
+    <div class="sem">
+      <div class="sr ok"><div class="dot"></div><div><strong>Δ positivo + IC 95% que no incluye 0 → Efecto robusto</strong>El tratamiento produce una diferencia estadísticamente sustentada. Las bandas de IC son suficientemente estrechas. Puede reportar el tamaño del efecto con el rango del IC.</div></div>
+      <div class="sr warn"><div class="dot"></div><div><strong>Δ positivo pero IC muy amplio (>25 pp) → Dirección probable, magnitud incierta</strong>Solo afirme que el efecto parece favorable. Evite reportar el valor puntual del Δ como si fuera preciso. Se necesita mayor n.</div></div>
+      <div class="sr bad"><div class="dot"></div><div><strong>Δ ≈ 0 o IC que cruza 0 → Sin evidencia de efecto diferencial</strong>No hay evidencia suficiente de que el tratamiento cambie la dinámica respecto a la evolución natural. No concluya "el tratamiento no funciona" — puede ser falta de potencia estadística.</div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Interpretar: matrices estimadas P_base y P_trat</div>
+    <p>Cada celda P[i][j] es la probabilidad de que un paciente en estado <em>i</em> pase al estado <em>j</em> en el siguiente período. La diagonal principal siempre domina: la mayoría de los pacientes permanecen en el mismo estado de un período al siguiente.</p>
+    <div class="elabel">Ejemplo de lectura — P_base (dinámica natural sin tratamiento)</div>
+    <div class="mxdemo">
+      <div style="font-size:10px;color:var(--t3);margin-bottom:7px;font-family:var(--ff-mono)">Desde ↓ / Hacia → &nbsp; Severo &nbsp; Leve &nbsp; Recuper.</div>
+      <div class="mxrow"><div class="mc mc-d">0.72</div><div class="mc mc-m">0.22</div><div class="mc mc-l">0.06</div></div>
+      <div class="mxrow"><div class="mc mc-m">0.18</div><div class="mc mc-d">0.65</div><div class="mc mc-l">0.17</div></div>
+      <div class="mxrow"><div class="mc mc-l">0.04</div><div class="mc mc-l">0.12</div><div class="mc mc-d">0.84</div></div>
+      <div class="mxlbl">P_base — sin intervención</div>
+    </div>
+    <p><strong>Lectura fila 0 (Severo):</strong> sin tratamiento, un paciente severo tiene 72% de probabilidad de permanecer severo, 22% de mejorar a leve y 6% de recuperarse directamente. <strong>P_trat debe mostrar valores más altos</strong> en las transiciones hacia Recuperado (columna derecha) para evidenciar efecto terapéutico.</p>
+    <div class="call warn">
+      <div class="call-title">Matrices con ceros o valores extremos</div>
+      Si una fila de P_base tiene 0.00 en todas las transiciones de salida (excepto la diagonal = 1.00), significa que ningún paciente de esa fila transitó desde ese estado en la fase basal. La estimación es 1.0 en la diagonal por defecto, pero <strong>no tiene respaldo empírico</strong>. Cualquier predicción que pase por ese estado debe interpretarse con máxima cautela.
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Interpretar: gráfico "Evolución Poblacional"</div>
+    <p>Muestra cómo se distribuye la cohorte entre los estados semana a semana. La curva sólida es la trayectoria predicha por el modelo NH; las bandas discontinuas son el IC 95% bootstrap (N=150 remuestras).</p>
+    <div class="call info">
+      <div class="call-title">Sobre las bandas de IC bootstrap</div>
+      A mayor amplitud de las bandas, mayor incertidumbre en la estimación. Si las bandas son más anchas que la señal misma (ej. IC de 10%–70% cuando el valor central es 40%), el análisis es informativamente vacío para ese período. La amplitud de las bandas depende principalmente del tamaño de la muestra y de la heterogeneidad entre pacientes.
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Interpretar: gráfico "No Homogéneo vs. Homogéneo (P_base)"</div>
+    <p>La curva continua es el modelo NH con tratamiento. La curva discontinua es el <em>contrafactual</em>: lo que habría ocurrido si los pacientes mantuvieran las probabilidades de P_base sin ningún efecto de tratamiento. La diferencia final entre ambas es el Δ de recuperación.</p>
+    <div class="call warn">
+      <div class="call-title">Esta comparación no equivale a un experimento aleatorizado</div>
+      El escenario "sin tratamiento" se construye de la fase pre-intervención, no de un grupo control contemporáneo. Factores como la maduración natural, regresión a la media o diferencias de selección entre las cohortes pueden inflar el Δ. Interprete el efecto con esta limitación explícita en su reporte.
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Interpretar: tabla de comparación de modelos (AIC/BIC)</div>
+    <table class="gt">
+      <thead><tr><th>Indicador</th><th>Qué mide</th><th>Cómo decidir</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Log-L</strong></td><td>Log-verosimilitud: bondad de ajuste del modelo a las transiciones observadas. Mayor = mejor.</td><td>Solo comparar entre modelos con los mismos datos. Sin interpretación absoluta.</td></tr>
+        <tr><td><strong>AIC</strong></td><td>Penaliza la complejidad. Sigmoide tiene 2 parámetros vs. 1 de los otros dos.</td><td>Elegir el modelo con ΔAIC = 0. ΔAIC &lt; 2 = modelos equivalentes, cualquiera es válido.</td></tr>
+        <tr><td><strong>BIC</strong></td><td>Penaliza más fuertemente que AIC; favorece parsimonia.</td><td>Con N &gt; 100 transiciones, preferir BIC si difiere de AIC.</td></tr>
+        <tr><td><strong>Test de Vuong</strong></td><td>p-valor de la comparación directa entre dos modelos.</td><td>p &lt; 0.05 = diferencia estadísticamente significativa entre los dos modelos comparados.</td></tr>
+      </tbody>
+    </table>
+    <div class="recbox">
+      <div class="recbox-title">🔎 Cuando los tres modelos son estadísticamente equivalentes</div>
+      <p>Si ΔAIC &lt; 2 entre todos, use la teoría clínica: ¿hay razón para esperar latencia inicial? → Sigmoide. ¿Efecto inmediato que decae? → Exponencial. Sin hipótesis → Lineal (más parsimonioso). Documente esta elección en el reporte.</p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Ejemplos controlados del botón "📥 Cargar ejemplo"</div>
+    <p>El botón selecciona aleatoriamente uno de seis escenarios predefinidos con semilla fija (reproducibles con cada clic). Una etiqueta aparece bajo el botón indicando cuál fue cargado. Los tres primeros cumplen la propiedad de Markov de primer orden; los tres últimos la violan deliberadamente para ilustrar su manifestación en los tests.</p>
+    <table class="gt">
+      <thead><tr><th>Escenario</th><th>Propiedad de Markov</th><th>Modelo que debe ganar (AIC)</th><th>Resultado esperado en tests</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="pill pg">✅ A1</span></td>
+          <td>Cumple — 1er orden</td>
+          <td><span class="pill pv">Sigmoide</span> — inflexión en U.T. 7</td>
+          <td>Test CK y Raftery en verde</td>
+        </tr>
+        <tr>
+          <td><span class="pill pg">✅ A2</span></td>
+          <td>Cumple — 1er orden</td>
+          <td><span class="pill pt">Exponencial</span> — impacto rápido inicial</td>
+          <td>Test CK y Raftery en verde</td>
+        </tr>
+        <tr>
+          <td><span class="pill pg">✅ A3</span></td>
+          <td>Cumple — 1er orden</td>
+          <td><span class="pill pb">Lineal</span> — mejora constante acumulativa</td>
+          <td>Test CK y Raftery en verde</td>
+        </tr>
+        <tr>
+          <td><span class="pill pr">❌ B1</span></td>
+          <td>Viola — dependencia del estado en <em>t</em>−2</td>
+          <td>Variable</td>
+          <td><strong>Raftery en rojo</strong> (G² elevado)</td>
+        </tr>
+        <tr>
+          <td><span class="pill pr">❌ B2</span></td>
+          <td>Viola — duración en estado afecta transición</td>
+          <td>Variable</td>
+          <td><strong>Raftery en rojo</strong></td>
+        </tr>
+        <tr>
+          <td><span class="pill pr">❌ B3</span></td>
+          <td>Viola — heterogeneidad latente entre subgrupos</td>
+          <td>Variable</td>
+          <td><strong>Raftery en rojo</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="call info">
+      <div class="call-title">Nota sobre potencia estadística con los ejemplos Grupo A</div>
+      Los escenarios A usan 12 pacientes con ~18 observaciones. Con esta muestra, los tests tienen potencia limitada: es normal obtener p marginales (0.05–0.10) en alguna fila del Test CK sin que ello indique violación real de Markov — puede ser varianza muestral. Solo los escenarios B están diseñados para producir p &lt; 0.05 de forma consistente en el Test de Raftery.
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     COVARIABLES
+════════════════════════════════════ -->
+<div id="pg-cov" class="page">
+  <div class="ph-tag">Módulo 2 · Tab "📊 Covariables"</div>
+  <h1 class="ph-title">Regresión Logística Multinomial sobre Transiciones</h1>
+  <p class="ph-lead">Responde: ¿qué características medibles del paciente (edad, severidad inicial, adherencia…) predicen con qué probabilidad realizará una transición específica entre estados?</p>
+
+  <div class="sec">
+    <div class="sec-title">Qué modela este módulo</div>
+    <p>Para cada estado de origen, se ajusta un modelo de regresión logística multinomial que predice la probabilidad de transitar a cada estado destino en función de las covariables. El resultado son coeficientes β para cada par (covariable × transición), que cuantifican cuánto cambia el <em>log-odds</em> de esa transición por cada unidad de la covariable, manteniendo las demás constantes.</p>
+    <div class="formula">
+      OR = e^β
+      <div class="fc">Por cada unidad de incremento de la covariable, los odds de esa transición se multiplican por e^β. Un OR = 1.5 significa que los odds aumentan un 50%.</div>
+    </div>
+    <p>Los coeficientes se estiman por gradiente descendente (máxima verosimilitud) y los IC 95% por bootstrap paramétrico de 1 000 remuestras.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Formato de ingreso de datos</div>
+    <p>Cada línea es una transición observada: <code>estado_origen, estado_destino | covariable1=valor, covariable2=valor, ...</code></p>
+    <div class="elabel">Ejemplo con 3 covariables clínicas</div>
+    <pre class="codeblock">0, 1 | edad=35, severidad=0.80, adherencia=0.90
+0, 0 | edad=52, severidad=0.95, adherencia=0.40
+0, 2 | edad=28, severidad=0.45, adherencia=0.95
+1, 2 | edad=31, severidad=0.30, adherencia=0.85
+1, 1 | edad=60, severidad=0.70, adherencia=0.55
+2, 2 | edad=40, severidad=0.10, adherencia=0.95
+2, 1 | edad=55, severidad=0.35, adherencia=0.60  <span class="cm">← recaída</span></pre>
+    <div class="call warn">
+      <div class="call-title">Estandarización de covariables (obligatoria cuando las escalas difieren mucho)</div>
+      Si las covariables tienen escalas muy distintas (ej. "edad" en 20–80 vs. "adherencia" en 0–1), el gradiente descendente puede divergir y producir NaN en los coeficientes. Estandarice a media 0 y SD 1 antes de ingresar: <code>x_std = (x - media) / SD</code>. Luego, el OR se interpreta por cada desviación estándar de la covariable, no por cada unidad original.
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Parámetros del modo simulación (referencia)</div>
+    <table class="gt">
+      <thead><tr><th>Slider</th><th>Rango</th><th>Qué controla</th></tr></thead>
+      <tbody>
+        <tr><td>N observaciones</td><td>50–2 000</td><td>Número de transiciones simuladas con covariables</td></tr>
+        <tr><td>Covariables (β)</td><td>Los intercepts β₀ de cada transición</td><td>Controla la tasa basal de cada tipo de transición en la simulación</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Interpretar: coeficientes β e IC 95%</div>
+    <p>La tabla de coeficientes muestra, para cada covariable y cada transición, el β estimado, su IC 95% y el OR.</p>
+    <table class="gt">
+      <thead><tr><th>Resultado</th><th>Interpretación</th><th>Ejemplo</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>β &gt; 0, IC sin cruzar 0 <span class="ok-t">Significativo</span></td>
+          <td>La covariable favorece esa transición. OR &gt; 1: por cada unidad extra, los odds de transitar se multiplican por OR.</td>
+          <td>β = 0.80 para "adherencia → 0→2": OR = 2.23. Por cada unidad de adherencia adicional, los odds de pasar de Severo a Recuperado se multiplican por 2.23.</td>
+        </tr>
+        <tr>
+          <td>β &lt; 0, IC sin cruzar 0 <span class="ok-t">Significativo</span></td>
+          <td>La covariable reduce los odds de esa transición.</td>
+          <td>β = −1.20 para "edad → 0→2": OR = 0.30. A mayor edad, menores odds de recuperación directa desde estado severo.</td>
+        </tr>
+        <tr>
+          <td>IC cruza 0 <span class="warn-t">n.s.</span></td>
+          <td>Sin evidencia estadística de efecto. El resultado es compatible con β = 0.</td>
+          <td>IC = [−0.40, +0.60]. No se puede afirmar que esta variable tenga efecto direccional sobre esta transición.</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="call info">
+      <div class="call-title">Los coeficientes n.s. no son errores</div>
+      Un resultado no significativo es información válida: dice que con los datos disponibles, no hay evidencia de que esa covariable prediga esa transición. Esto es diferente a afirmar que no existe efecto — puede ser que la muestra no tenga potencia suficiente para detectarlo. No elimine covariables teóricamente importantes solo por no significancia estadística.
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Interpretar: gráfico de efecto de covariable</div>
+    <p>Muestra cómo cambia la probabilidad de cada transición al variar la covariable seleccionada (desplegable "Covariable a graficar"), con las demás fijas en sus medias. Eje X = rango de la covariable; eje Y = probabilidad de transición.</p>
+    <div class="sem">
+      <div class="sr ok"><div class="dot"></div><div><strong>Pendiente pronunciada + bandas estrechas → Predictor robusto</strong>La covariable tiene un efecto grande y bien estimado. Clínicamente accionable para estratificar pacientes o personalizar la intensidad de la intervención.</div></div>
+      <div class="sr warn"><div class="dot"></div><div><strong>Pendiente suave o bandas amplias → Predictor débil o impreciso</strong>El efecto puede existir pero es pequeño o incierto. Útil para generar hipótesis, no para decisiones inmediatas.</div></div>
+      <div class="sr bad"><div class="dot"></div><div><strong>Curva plana con bandas muy amplias → Sin efecto detectable</strong>La covariable no discrimina entre pacientes que transitan o no. Considere removerla del modelo.</div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Situaciones problemáticas y qué hacer</div>
+    <div class="scen">
+      <div class="scen-head"><div class="s-tag">Problema</div><div class="s-ttl">Todos los β aparecen como n.s.</div></div>
+      <div class="scen-body">
+        <p><strong>Causa probable:</strong> muestra insuficiente o covariables sin relación con las transiciones en estos datos.</p>
+        <p><strong>Acciones:</strong> (1) Reduzca el número de covariables al mínimo teóricamente justificado. (2) Asegúrese de tener al menos 10 observaciones por covariable. (3) Verifique estandarización si las escalas difieren mucho.</p>
+      </div>
+    </div>
+    <div class="scen">
+      <div class="scen-head"><div class="s-tag">Problema</div><div class="s-ttl">OR extremadamente alto (>20) o bajo (<0.05)</div></div>
+      <div class="scen-body">
+        <p><strong>Causa probable:</strong> separación perfecta — una covariable predice perfectamente cierta transición. Ocurre con muestras muy pequeñas y muchas covariables.</p>
+        <p><strong>Acciones:</strong> Verifique que esa transición tenga observaciones en ambas categorías del predictor. Con OR extremo y IC de [0.001, 15000], el resultado no es interpretable. Reduzca el número de covariables o aumente la muestra.</p>
+      </div>
+    </div>
+    <div class="scen">
+      <div class="scen-head"><div class="s-tag">Problema</div><div class="s-ttl">Valores NaN en coeficientes o gráfico vacío</div></div>
+      <div class="scen-body">
+        <p><strong>Causa probable:</strong> covariables en escalas muy distintas que causan divergencia del gradiente descendente.</p>
+        <p><strong>Acciones:</strong> Estandarice todas las covariables antes de ingresar los datos. El gradiente es sensible a diferencias de escala de 2 o más órdenes de magnitud.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     JERÁRQUICO MCMC
+════════════════════════════════════ -->
+<div id="pg-hier" class="page">
+  <div class="ph-tag">Módulo 3 · Tab "🧬 Jerárquico"</div>
+  <h1 class="ph-title">Inferencia Bayesiana Jerárquica con MCMC</h1>
+  <p class="ph-lead">Estima las probabilidades de transición como distribuciones de probabilidad completas, cuantificando explícitamente la incertidumbre que queda en los parámetros dado el tamaño de la muestra.</p>
+
+  <div class="sec">
+    <div class="sec-title">Por qué inferencia bayesiana</div>
+    <p>Los módulos anteriores producen una <em>estimación puntual</em> de la matriz de transición. Eso oculta cuánta incertidumbre hay en esa estimación. Con 50 pacientes, los coeficientes son mucho menos confiables que con 500. El enfoque bayesiano produce una <strong>distribución posterior</strong> para cada parámetro: en lugar de "la probabilidad de recuperación es 0.35", dice "la probabilidad de recuperación está entre 0.22 y 0.48 con el 95% de credibilidad".</p>
+    <p>El modelo es <em>jerárquico</em> porque cada paciente tiene su propia fila de matriz de transición, pero todas se asumen provenientes de una distribución poblacional Dirichlet común cuyos hiperparámetros α se estiman de toda la cohorte.</p>
+    <div class="formula">
+      P_i[fila_k] ~ Dirichlet(α₁, α₂, …, αₙ)  para cada paciente i
+      <div class="fc">Los α controlan la distribución poblacional. α alto → ese estado es más probable a nivel poblacional. Σα grande → baja heterogeneidad entre pacientes.</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Parámetros de configuración MCMC</div>
+    <table class="gt">
+      <thead><tr><th>Parámetro</th><th>Rango</th><th>Qué controla</th><th>Recomendación</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Iteraciones</strong></td>
+          <td>Slider. En simulación: relacionado con n_trans y n_pac.</td>
+          <td>Número total de muestras del algoritmo Metropolis-Hastings</td>
+          <td>Por defecto: 2 000. Aumentar a 5 000–10 000 si las trazas no convergen. Más iteraciones = más tiempo de cómputo (JavaScript single-thread).</td>
+        </tr>
+        <tr>
+          <td><strong>Burn-in (%)</strong></td>
+          <td>10–50%, default 25%</td>
+          <td>Porcentaje inicial de iteraciones descartadas como "calentamiento"</td>
+          <td>No bajar de 20%. Con muestras complejas o muchos estados, subir a 35–40%. El burn-in captura la fase de exploración aleatoria antes de que el algoritmo encuentre la región posterior real.</td>
+        </tr>
+        <tr>
+          <td><strong>α₁, α₂, α₃</strong> (modo simulación)</td>
+          <td>Campos numéricos</td>
+          <td>Hiperparámetros Dirichlet para generar la cohorte sintética</td>
+          <td>α alto en un estado → ese estado es más probable en la cohorte. Útil para explorar escenarios clínicos distintos.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Interpretar: trazas MCMC (trace plots)</div>
+    <p>Muestran la evolución de los parámetros α₁ y αₙ a lo largo de todas las iteraciones. Son el principal indicador de si el algoritmo funcionó correctamente.</p>
+    <div class="sem">
+      <div class="sr ok"><div class="dot"></div><div><strong>"Oruga" horizontal densa → Convergencia exitosa</strong>La cadena explora bien el espacio de parámetros. Densidad uniforme a lo largo de las iteraciones post burn-in. Los 5 runs paralelos cubren el mismo rango. Los resultados son confiables.</div></div>
+      <div class="sr warn"><div class="dot"></div><div><strong>Tendencia suave ascendente o descendente → Convergencia incompleta</strong>La cadena aún no llegó a la distribución estacionaria. Aumente las iteraciones o el porcentaje de burn-in. No use los resultados de esta ejecución.</div></div>
+      <div class="sr bad"><div class="dot"></div><div><strong>Saltos abruptos o "picos" aislados → Mixing deficiente</strong>La cadena queda atrapada en regiones del espacio y salta esporádicamente. Puede indicar datos insuficientes o problema numérico. Aumente iteraciones y verifique que las secuencias ingresadas tengan suficiente variabilidad entre estados.</div></div>
+    </div>
+    <div class="call info">
+      <div class="call-title">Diagnósticos MCMC de la versión 3.1</div>
+      La versión 3.1 calcula R̂ dividido clásico y ESS aproximado a partir de las cinco cadenas, por origen y destino. R̂ mayor de 1.01 o ESS menor de 400 generan una advertencia; valores favorables no garantizan convergencia. La correlación del gráfico MLE–posterior es descriptiva y no se usa como diagnóstico MCMC.
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Interpretar: distribuciones posteriores de α</div>
+    <p>El histograma de densidad posterior muestra dónde se concentran los valores plausibles de los hiperparámetros Dirichlet (α₁, α_intermedio, αₙ) dado los datos observados. Un pico estrecho = los datos son muy informativos. Una distribución ancha = alta incertidumbre, datos poco informativos para ese parámetro.</p>
+    <div class="sem">
+      <div class="sr ok"><div class="dot"></div><div><strong>Pico estrecho, bien definido → Alta certeza sobre el hiperparámetro</strong>Los datos restringen bien el valor poblacional. El HPD 95% será estrecho y las predicciones de Tab 4 serán más confiables.</div></div>
+      <div class="sr warn"><div class="dot"></div><div><strong>Distribución amplia pero unimodal → Certeza moderada</strong>El parámetro está identificado pero con incertidumbre sustancial. Reporte el HPD como parte del resultado, no solo el valor central.</div></div>
+      <div class="sr bad"><div class="dot"></div><div><strong>Distribución muy plana o bimodal → Datos poco informativos o problema de identificabilidad</strong>Los datos no están actualizando sustancialmente el prior. Con muestras pequeñas esto es esperado y es la respuesta honesta del modelo. No intente "forzar" resultados aumentando iteraciones.</div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Interpretar: HPD 95% (intervalo de credibilidad)</div>
+    <p>El HPD (Highest Posterior Density) al 95% encierra el 95% de la masa de la distribución posterior. Interpretación directa: <em>"con el 95% de probabilidad, dado lo que observamos, el verdadero valor del parámetro está dentro de este rango."</em></p>
+    <div class="sem">
+      <div class="sr ok"><div class="dot"></div><div><strong>Amplitud HPD &lt; 0.15 → Alta certeza</strong>Los datos restringen bien el parámetro. Suficiente para conclusiones robustas.</div></div>
+      <div class="sr warn"><div class="dot"></div><div><strong>Amplitud 0.15–0.30 → Certeza moderada</strong>Conclusiones posibles con cautela. Reporte el rango en los resultados.</div></div>
+      <div class="sr bad"><div class="dot"></div><div><strong>Amplitud &gt; 0.30 → Alta incertidumbre</strong>Los datos no son suficientemente informativos. El resultado es compatible con un rango demasiado amplio para ser clínicamente útil. <strong>Se necesitan más datos antes de tomar decisiones.</strong></div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Interpretar: gráfico Verdadero vs. Estimado P(dep → rec)</div>
+    <p>Compara, para cada paciente, la probabilidad "real" de la transición depresión → recuperación (calculada a partir del generador Dirichlet en modo simulación) con la estimada por el modelo jerárquico. La correlación r reportada en el KPI panel cuantifica qué tan bien el modelo distingue entre pacientes individualmente.</p>
+    <div class="sem">
+      <div class="sr ok"><div class="dot"></div><div><strong>r &gt; 0.80 → Modelo distingue bien a los pacientes individuales</strong></div></div>
+      <div class="sr warn"><div class="dot"></div><div><strong>0.50 &lt; r &lt; 0.80 → Distinción parcial</strong>El modelo captura tendencias poblacionales pero no diferencia con precisión a los individuos.</div></div>
+      <div class="sr bad"><div class="dot"></div><div><strong>r &lt; 0.50 → El modelo no distingue adecuadamente entre pacientes</strong>La heterogeneidad individual no está bien capturada. Puede indicar que el número de transiciones por paciente es insuficiente (N_trans bajo) o que la cohorte es muy heterogénea para un modelo jerárquico simple.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     PREDICCIÓN
+════════════════════════════════════ -->
+<div id="pg-pred" class="page">
+  <div class="ph-tag">Módulo 4 · Tab "🎯 Predicción"</div>
+  <h1 class="ph-title">Predicción Individual con Empirical Bayes</h1>
+  <p class="ph-lead">Genera una predicción de la trayectoria futura de un nuevo paciente combinando su historial propio (aunque sea corto) con el conocimiento poblacional del modelo jerárquico mediante la técnica de shrinkage o contracción bayesiana.</p>
+
+  <div class="sec">
+    <div class="sec-title">Prerrequisito obligatorio</div>
+    <div class="call danger">
+      <div class="call-title">Ejecutar primero el módulo jerárquico (Tab 3)</div>
+      Este módulo usa la matriz poblacional P_pob estimada en Tab 3 como prior. Si Tab 3 no se ha ejecutado en la sesión actual, el botón de predicción producirá un error. El módulo no puede funcionar de manera aislada.
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Principio del shrinkage bayesiano</div>
+    <p>Con solo 3–5 observaciones de un paciente nuevo, la matriz individual estimada es altamente ruidosa. El Empirical Bayes combina la información individual con la poblacional mediante el parámetro λ:</p>
+    <div class="formula">
+      P_EB = λ · P_pob + (1 − λ) · P_MLE_individual
+      <div class="fc">λ ∈ [0,1] es el peso del prior poblacional (slider en la interfaz, rango 0–1, default 0.70). El modelo "contrae" la estimación individual hacia la media poblacional.</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Calibración del parámetro λ (slider de shrinkage)</div>
+    <table class="gt">
+      <thead><tr><th>Valor de λ</th><th>Qué prioriza</th><th>Cuándo usar</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>0.8 – 1.0</strong></td>
+          <td>90–100% información poblacional, 0–10% individual</td>
+          <td>Paciente con muy pocas observaciones propias (1–4 puntos). O paciente que parece "típico" según su presentación clínica.</td>
+        </tr>
+        <tr>
+          <td><strong>0.4 – 0.7</strong> <span class="pill pg">Recomendado</span></td>
+          <td>Balance entre población e individuo</td>
+          <td>Paciente con 5–12 observaciones y perfil clínico que no es extremadamente atípico respecto a la cohorte.</td>
+        </tr>
+        <tr>
+          <td><strong>0.1 – 0.3</strong></td>
+          <td>Prioriza datos del paciente individual</td>
+          <td>Paciente con historial largo (&gt; 15 observaciones) o que el análisis de sensibilidad muestra como claramente atípico. Alto riesgo de sobreajuste si los datos son ruidosos.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Ingreso de la secuencia del nuevo paciente (modo datos)</div>
+    <p>Ingrese la secuencia observada del nuevo paciente en el campo de texto del panel de datos:</p>
+    <div class="elabel">Ejemplo — Nuevo paciente con 6 observaciones</div>
+    <pre class="codeblock">0, 0, 1, 1, 2, 1   <span class="cm">← recuperación parcial con recaída en la semana 6</span></pre>
+    <p>Luego ajuste λ según la longitud del historial (ver tabla anterior) y pulse el botón de predicción.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Interpretar: matrices Population vs. Individual (EB)</div>
+    <p>Aparecen tres matrices comparadas: la poblacional (P_pob), la individual empírica (P_MLE), y la Empirical Bayes (P_EB) resultante. La P_MLE individual con pocas observaciones tendrá muchos ceros — estados que el paciente simplemente no ha visitado aún. La P_EB "rellena" esos ceros con la información poblacional, evitando predicciones de probabilidad cero para transiciones no observadas.</p>
+    <div class="call info">
+      <div class="call-title">Ceros en la matriz individual</div>
+      Si P_MLE tiene toda una fila en cero excepto la diagonal = 1.0, ese estado nunca fue abandonado por el paciente en el historial disponible. P_EB asignará una probabilidad pequeña pero positiva a esas transiciones, basada en lo que ocurre en la población. Esto evita predicciones degeneras ("este paciente nunca saldrá de este estado") por falta de observaciones.
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Interpretar: análisis de sensibilidad al prior</div>
+    <p>El gráfico de sensibilidad muestra cómo varía la probabilidad de recuperación predicha al modificar λ de 0 a 1. Es el diagnóstico más importante de este módulo.</p>
+    <div class="sem">
+      <div class="sr ok"><div class="dot"></div><div><strong>Curva plana (insensible a λ) → Predicción robusta</strong>El paciente y la población son consistentes. La predicción no cambia al ponderar más o menos el prior. Cualquier λ razonable produce el mismo resultado.</div></div>
+      <div class="sr warn"><div class="dot"></div><div><strong>Pendiente gradual → Sensibilidad normal</strong>La predicción varía al cambiar λ, de forma predecible. Elija λ cuidadosamente y reporte el rango de predicciones para λ = 0.4–0.8, no solo el valor puntual.</div></div>
+      <div class="sr bad"><div class="dot"></div><div><strong>Salto abrupto en λ ≈ 0.5 → Paciente atípico (outlier clínico)</strong>El historial del paciente es muy inconsistente con el patrón poblacional. La predicción cambia radicalmente según cuánto se confíe en la población vs. el individuo. <strong>En este caso la predicción no es confiable.</strong> Reportar el rango completo como incertidumbre honesta. Considerar si este paciente pertenece realmente a la misma población clínica del modelo.</div></div>
+    </div>
+    <div class="call warn">
+      <div class="call-title">Esta predicción no es un pronóstico diagnóstico individual</div>
+      La probabilidad de recuperación es una estimación estadística. No puede usarse para afirmar que un paciente específico se recuperará o no. El valor clínico está en identificar pacientes con trayectorias atípicas que requieren seguimiento diferencial, no en generar pronósticos deterministas.
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     CTMC
+════════════════════════════════════ -->
+<div id="pg-ctmc" class="page">
+  <div class="ph-tag">Módulo 5 · Tab "🔬 CTMC"</div>
+  <h1 class="ph-title">Cadenas de Markov en Tiempo Continuo</h1>
+  <p class="ph-lead">Para cuando los datos registran el tiempo exacto que cada paciente permaneció en cada estado antes de transitar, en lugar de observaciones en intervalos regulares fijos.</p>
+
+  <div class="sec">
+    <div class="sec-title">¿Cuándo usar CTMC en lugar de los módulos 1–4?</div>
+    <table class="gt">
+      <thead><tr><th>Tipo de dato</th><th>Módulo apropiado</th></tr></thead>
+      <tbody>
+        <tr><td>Evaluaciones semanales regulares (misma frecuencia siempre)</td><td><span class="pill pb">Tabs 1–4</span> tiempo discreto</td></tr>
+        <tr><td>Registros de historia clínica con fechas exactas de cambio diagnóstico</td><td><span class="pill pt">Tab 5</span> CTMC</td></tr>
+        <tr><td>Datos de hospitalización con duración exacta de cada episodio</td><td><span class="pill pt">Tab 5</span> CTMC</td></tr>
+        <tr><td>Evaluaciones con intervalos muy irregulares (algunas cada 2 semanas, otras cada 3 meses)</td><td><span class="pill pt">Tab 5</span> CTMC</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Formato de ingreso de datos</div>
+    <p>Cada línea representa una estancia completa: <code>estado_origen, estado_destino, duración</code>. La duración es el tiempo que el paciente permaneció en <em>estado_origen</em> antes de transitar a <em>estado_destino</em>.</p>
+    <div class="elabel">Ejemplo — 5 transiciones de un mismo paciente</div>
+    <pre class="codeblock">0, 1, 3.2   <span class="cm">← en estado 0 durante 3.2 sem., luego pasó a estado 1</span>
+1, 2, 1.5   <span class="cm">← en estado 1 durante 1.5 sem., luego a estado 2</span>
+2, 1, 0.8   <span class="cm">← recaída: de 2 vuelve a 1 en 0.8 sem.</span>
+1, 2, 2.4   <span class="cm">← segunda estancia en estado 1</span>
+0, 1, 4.0   <span class="cm">← registro de otro paciente, o segunda recaída severa</span></pre>
+    <div class="call info">
+      <div class="call-title">Unidades de duración</div>
+      Pueden ser días, semanas, meses o años — siempre que sean consistentes en todo el dataset. La herramienta no asume ninguna unidad, pero los resultados (tasas Q, tiempo medio de permanencia) estarán en esas mismas unidades. Especifique la unidad explícitamente en sus reportes.
+    </div>
+    <div class="call warn">
+      <div class="call-title">Estados absorbentes: codificación de índices</div>
+      Si activa "Abandono del tratamiento" y/o "Crisis aguda" en el panel izquierdo, se agregan estados con índices consecutivos a los estados clínicos. Por ejemplo con 3 estados clínicos: índice 3 = Abandono, índice 4 = Crisis aguda. Use estos índices en la columna de estado_destino cuando corresponda:
+      <pre class="codeblock" style="margin-top:8px">1, 3, 2.1   <span class="cm">← paciente en estado 1 durante 2.1 sem., luego abandonó</span>
+0, 4, 1.3   <span class="cm">← crisis aguda desde estado 0 tras 1.3 sem.</span></pre>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Parámetros del modo simulación</div>
+    <table class="gt">
+      <thead><tr><th>Control</th><th>Rango</th><th>Función</th></tr></thead>
+      <tbody>
+        <tr><td>Modelo de efecto</td><td>Lineal / Sigmoide / Exponencial</td><td>Forma de evolución del efecto terapéutico en la simulación</td></tr>
+        <tr><td>Tiempo simulación (sem.)</td><td>12–104 sem.</td><td>Horizonte total del seguimiento simulado</td></tr>
+        <tr><td>Paso temporal (dt)</td><td>0.01–0.50</td><td>Resolución de la simulación. Menor dt = mayor precisión numérica, mayor tiempo de cómputo. Recomendado: 0.10</td></tr>
+        <tr><td>Inicio tratamiento (sem.)</td><td>0–20</td><td>Semana en que comienza el efecto terapéutico en la simulación</td></tr>
+        <tr><td>Duración rampa (sem.)</td><td>1–30</td><td>Cuántas semanas tarda el tratamiento en alcanzar su efecto máximo</td></tr>
+        <tr><td>Tasa → Abandono</td><td>Campo numérico</td><td>Tasa de transición hacia estado absorbente de abandono (solo si está activado)</td></tr>
+        <tr><td>Tasa → Crisis</td><td>Campo numérico</td><td>Tasa de transición hacia estado absorbente de crisis (solo si está activado)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">La matriz generadora Q: qué es y cómo leerla</div>
+    <p>La CTMC trabaja con la <strong>matriz generadora Q</strong> de tasas de transición, no con probabilidades. La diferencia es fundamental:</p>
+    <ul>
+      <li>P[i][j] (tiempo discreto): "en el próximo período, ¿qué probabilidad hay de ir de i a j?"</li>
+      <li>Q[i][j] (CTMC): "¿con qué <em>tasa</em> (velocidad) ocurre la transición de i a j, por unidad de tiempo?"</li>
+    </ul>
+    <p>La diagonal de Q contiene valores negativos: Q[i][i] = −Σ Q[i][j] para j≠i. Ese valor negativo es la <em>tasa de salida total</em> del estado i. Su inverso (1/|Q[i][i]|) es el <strong>tiempo medio de permanencia</strong> en ese estado.</p>
+    <table class="gt">
+      <thead><tr><th>Celda Q[i][j]</th><th>Interpretación</th><th>Ejemplo</th></tr></thead>
+      <tbody>
+        <tr><td>Diagonal negativa</td><td>Tasa de salida total del estado. |Q[i][i]| es la velocidad con que el paciente "escapa".</td><td>Q[0][0] = −0.45 → tasa 0.45/sem. → tiempo medio = 1/0.45 ≈ 2.2 semanas en estado 0</td></tr>
+        <tr><td>Fuera de diagonal positivo</td><td>Tasa específica de transición hacia ese estado destino.</td><td>Q[0][1] = 0.30 → 0.30 transiciones por semana de estado 0 a estado 1</td></tr>
+        <tr><td>Fila de estado absorbente</td><td>Todos los elementos son 0: del absorbente no se puede salir.</td><td>Q[Abandono][*] = 0.00 para todos los estados</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Interpretar: gráfico de tasas de salida |q_ii|</div>
+    <p>Barras altas = estado inestable (pacientes tienden a salir rápido). Barras bajas = estado estable (pacientes tienden a permanecer). Las bandas discontinuas son IC 95% por bootstrap no paramétrico.</p>
+    <div class="sem">
+      <div class="sr ok"><div class="dot"></div><div><strong>Barras altas en estados graves, baja en recuperación → Patrón clínico esperado</strong>Los pacientes escapan rápido de los estados severos y se anclan en recuperación. El tiempo medio de permanencia en Recuperado es largo. Las bandas bootstrap son estrechas (estimaciones robustas).</div></div>
+      <div class="sr warn"><div class="dot"></div><div><strong>Barra alta en el estado de recuperación → Alta recidiva</strong>Los pacientes no se mantienen en recuperación. El tiempo medio de permanencia en ese estado es corto. Puede indicar necesidad de fase de consolidación o mantenimiento más prolongado.</div></div>
+      <div class="sr bad"><div class="dot"></div><div><strong>Barras muy bajas en estados graves → Cronicidad</strong>Los pacientes permanecen atrapados en estados severos durante períodos muy prolongados. Tiempo medio de permanencia alto. Sugiere necesidad de cambio o intensificación de la estrategia terapéutica.</div></div>
+    </div>
+    <div class="call info">
+      <div class="call-title">IC 95% bootstrap muy amplios en estados absorbentes</div>
+      Si hay menos de 5 eventos de abandono o crisis, las tasas estimadas Q[i→absorbente] tienen IC extremadamente amplios. Con pocos eventos, la tasa puntual no es confiable. Siempre reporte "n = X eventos" junto con la tasa y su IC cuando n &lt; 10.
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">KPIs específicos del módulo CTMC</div>
+    <table class="gt">
+      <thead><tr><th>Indicador</th><th>Dónde aparece</th><th>Interpretación</th></tr></thead>
+      <tbody>
+        <tr><td><strong>% tiempo en recuperación</strong></td><td>Panel superior</td><td>Fracción del tiempo total de seguimiento que los pacientes pasaron en el estado de recuperación. >40% es señal de efectividad sostenida.</td></tr>
+        <tr><td><strong>% tiempo en estado grave</strong></td><td>Panel superior</td><td>Fracción en el estado más severo. Alto valor indica que la carga de morbilidad concentrada en el peor estado es alta.</td></tr>
+        <tr><td><strong>N transiciones</strong></td><td>Panel superior</td><td>Total de eventos de cambio de estado. Determinante del poder estadístico de todas las estimaciones.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     TESTS
+════════════════════════════════════ -->
+<div id="pg-tests" class="page">
+  <div class="ph-tag">Validación del modelo</div>
+  <h1 class="ph-title">Tests de Validación Estadística</h1>
+  <p class="ph-lead">Los tres tests se ejecutan automáticamente tras cada análisis. Deben revisarse antes de interpretar cualquier resultado sustantivo. Un test en rojo no invalida el análisis, pero modifica la forma en que deben reportarse e interpretarse los resultados.</p>
+
+  <div class="sec">
+    <div class="sec-title">Test ① — Chapman-Kolmogorov (Tab 1: No Homogéneo)</div>
+    <p>Verifica si el modelo no homogéneo ajustado predice correctamente las transiciones observadas a múltiples pasos hacia adelante. Específicamente, para cada lag h ∈ {2, 3, 4} y cada estado de origen, compara la distribución empírica de destinos a h pasos con la predicha por el modelo NH.</p>
+    <div class="call violet">
+      <div class="call-title">Novedad v8: el Test CK usa el modelo de mejor AIC, no el dropdown</div>
+      Los valores esperados se calculan con el <strong>modelo ganador por AIC</strong>, seleccionado automáticamente al ejecutar el análisis. El título del test en la herramienta indica explícitamente qué modelo se usó: <em>"① Test χ² de Chapman-Kolmogorov — modelo <strong>Lineal</strong>"</em> (o el que corresponda). Esto elimina el riesgo de comparar observaciones empíricas con predicciones de un modelo incorrecto. Los valores esperados siguen calculándose como el promedio ponderado de los productos ordenados P(t₀+1)·P(t₀+2)·…·P(t₀+h) para cada t₀ observado — nunca se usa P_base elevada a potencias.
+    </div>
+    <table class="gt">
+      <thead><tr><th>Columna en la tabla</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Lag (h)</strong></td><td>Número de pasos hacia adelante evaluados. h=2 significa saltando dos períodos de tiempo.</td></tr>
+        <tr><td><strong>Estado origen</strong></td><td>Estado clínico desde donde parte el salto.</td></tr>
+        <tr><td><strong>n observ.</strong></td><td>Número de veces que esa combinación (origen, lag) aparece en los datos. Si n &lt; 5, esa fila no se evalúa (muestra insuficiente para el test).</td></tr>
+        <tr><td><strong>Obs / Esp (modelo ganador AIC)</strong></td><td>Porcentajes observados en datos vs. predichos por el modelo de mejor AIC. El título del test indica qué modelo fue. Deben ser similares si el modelo es correcto.</td></tr>
+        <tr><td><strong>χ²</strong></td><td>Magnitud de la discrepancia total. Se convierte a p-valor con g.l. = M−1.</td></tr>
+        <tr><td><strong>p-valor</strong></td><td>Probabilidad de observar esa discrepancia si el modelo fuera correcto. p &lt; 0.05 indica violación.</td></tr>
+      </tbody>
+    </table>
+    <div class="sem">
+      <div class="sr ok"><div class="dot"></div><div><strong>p ≥ 0.10 en todas las filas → Sin evidencia de violación</strong>El modelo predice bien a múltiples pasos. Puede proceder con confianza en las predicciones de evolución poblacional.</div></div>
+      <div class="sr warn"><div class="dot"></div><div><strong>0.05 ≤ p &lt; 0.10 en algunas filas → Evidencia marginal</strong>Monitorear. Reportar el resultado pero no invalida el análisis por sí solo. Puede ser artefacto de muestras pequeñas.</div></div>
+      <div class="sr bad"><div class="dot"></div><div><strong>p &lt; 0.05 → Violación detectada. Acciones recomendadas:</strong>
+        <ul style="margin-top:6px">
+          <li>Verifique que n sea suficiente en esas filas (si n &lt; 15, el test es inestable)</li>
+          <li>Revise la tabla AIC/BIC: la herramienta ya seleccionó el mejor de los tres modelos. Si el ΔAIC entre modelos es &lt; 2, los modelos son equivalentes y el test marginal puede deberse a varianza muestral.</li>
+          <li>Considere que los estados pueden estar combinando subgrupos con dinámicas distintas (ver Limitación B3 en los ejemplos del Tab 1)</li>
+          <li>Interprete los gráficos de evolución como aproximaciones, no como predicciones exactas</li>
+        </ul>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Test ② — Raftery LRT (Tabs 1 y 3) <span style="font-size:10.5px;font-weight:400;color:var(--t2);font-family:var(--ff-mono)">· independiente del modelo temporal</span></div>
+    <p>Verifica la suposición más fundamental: que el estado siguiente depende <em>solo</em> del estado actual, no del estado de dos o más períodos atrás. Cuenta los tripletes (X_{t−1}, X_t, X_{t+1}) y compara cuánto mejora la predicción al incluir X_{t−1} como predictor adicional.</p>
+    <div class="formula">
+      G² = 2 Σ n_{abc} · log(n_{abc} · n_{a··} / (n_{ab·} · n_{a·c}))
+      <div class="fc">n_{abc} = conteos de tripletes. g.l. = M² · (M−1). p-valor calculado con χ² de Wilson-Hilferty.</div>
+    </div>
+    <table class="gt">
+      <thead><tr><th>Columna</th><th>Interpretación</th></tr></thead>
+      <tbody>
+        <tr><td><strong>G²</strong></td><td>Estadístico de verosimilitud. G² ≈ 0 = añadir el estado previo no mejora la predicción = Markov de primer orden es adecuado.</td></tr>
+        <tr><td><strong>g.l.</strong></td><td>M² × (M−1). Con 3 estados = 18 g.l. Esta escala grande hace que el test sea conservador.</td></tr>
+        <tr><td><strong>N tripletes</strong></td><td>Tamaño de muestra efectivo. Si N &lt; 30, el test tiene baja potencia y un p verde no garantiza que Markov sea correcto.</td></tr>
+      </tbody>
+    </table>
+    <div class="call warn">
+      <div class="call-title">Cuando el resultado es rojo (p &lt; 0.05)</div>
+      El estado de dos períodos atrás aporta información adicional. Esto no invalida el análisis pero sugiere:<br>
+      — Cautela especial en predicciones a largo plazo (los errores acumulan)<br>
+      — Considerar incorporar el estado previo como covariable en Tab 2<br>
+      — Evaluar si los estados mezclan subgrupos con dinámicas temporales distintas<br>
+      — En Tab 3, las predicciones individuales de Tab 4 pueden estar sesgadas
+    </div>
+    <div class="call info">
+      <div class="call-title">Por qué el test ② aplica en Tab 3 pero el test ① no</div>
+      En Tab 3 (jerárquico), cada paciente tiene su propia matriz P_i. No existe una única P de referencia para comparar con empíricos de múltiples pasos (que sería el test ①). El test de tripletes (②) opera directamente sobre los datos observados sin necesitar esa referencia, por lo que sí aplica.
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Test ③ — Exponencialidad de tiempos de permanencia (Tab 5: CTMC)</div>
+    <p>La CTMC asume que el tiempo que un paciente permanece en un estado sigue una distribución <strong>Exponencial(λ)</strong>. Esto equivale a asumir ausencia de memoria sobre la duración de la estancia: si el paciente lleva 1 semana o 5 semanas en un estado, su probabilidad de salir es la misma. Si esto no se cumple, las tasas Q y los tiempos de absorción son incorrectos.</p>
+    <p>Se aplican dos criterios complementarios por cada estado clínico:</p>
+    <div class="card">
+      <div class="card-head">📐 Coeficiente de Variación (CV = SD / media)</div>
+      <p>Para una distribución exponencial, CV = 1 exactamente. CV &gt; 1 indica cola pesada (algunos pacientes permanecen muchísimo tiempo, alta variabilidad). CV &lt; 1 indica tiempos muy concentrados alrededor de la media. Ambos casos violan la asunción.</p>
+      <div class="sem" style="margin-top:10px">
+        <div class="sr ok"><div class="dot"></div><div><strong>|CV − 1| ≤ 0.30 → Compatible con exponencial</strong></div></div>
+        <div class="sr warn"><div class="dot"></div><div><strong>0.30 &lt; |CV − 1| ≤ 0.50 → Desviación moderada.</strong> Reportar como limitación.</div></div>
+        <div class="sr bad"><div class="dot"></div><div><strong>|CV − 1| &gt; 0.50 → Desviación sustancial.</strong> La asunción exponencial es cuestionable para ese estado.</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">📊 Test KS de Lilliefors</div>
+      <p>Compara la distribución empírica acumulada de los tiempos observados contra la CDF teórica Exp(λ̂ = 1/media). El estadístico D es la máxima discrepancia entre ambas curvas.</p>
+      <div class="call warn">
+        <div class="call-title">Los p-valores son conservadores (Lilliefors, 1969)</div>
+        Porque λ̂ se estima del mismo sample, los p-valores calculados son más grandes de lo que deberían ser con un parámetro conocido. Un p ≈ 0.10 con parámetro estimado equivale aproximadamente a p ≈ 0.05 con parámetro conocido. Tenga esto en cuenta en la zona marginal.
+      </div>
+      <div class="sem" style="margin-top:10px">
+        <div class="sr ok"><div class="dot"></div><div><strong>p ≥ 0.10 → Sin evidencia de no-exponencialidad. CTMC válida para ese estado.</strong></div></div>
+        <div class="sr warn"><div class="dot"></div><div><strong>0.05 ≤ p &lt; 0.10 → Evidencia marginal.</strong> CTMC razonablemente aplicable, reportar como limitación.</div></div>
+        <div class="sr bad"><div class="dot"></div><div><strong>p &lt; 0.05 → Tiempos no exponenciales. Acciones:</strong>
+          <ul style="margin-top:6px">
+            <li>Considere un <strong>modelo semi-Markoviano</strong> (Weiss &amp; Zelen, 1965) con distribuciones más flexibles (Weibull, Gamma)</li>
+            <li>Las tasas Q y tiempos medios de permanencia para ese estado son aproximaciones, no estimaciones exactas</li>
+            <li>Si CV &gt;&gt; 1 en un estado grave, puede indicar heterogeneidad no capturada: algunos pacientes salen rápido y otros permanecen indefinidamente — considere análisis de subgrupos</li>
+          </ul>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Resumen: qué test aplica en qué módulo</div>
+    <table class="gt">
+      <thead><tr><th>Test</th><th>Tab 1</th><th>Tab 2</th><th>Tab 3</th><th>Tab 4</th><th>Tab 5</th></tr></thead>
+      <tbody>
+        <tr><td>① Chapman-Kolmogorov χ²</td><td class="ok-t">✓ Auto</td><td class="warn-t">—</td><td class="warn-t">— *</td><td class="warn-t">—</td><td class="warn-t">—</td></tr>
+        <tr><td>② Raftery G² tripletes</td><td class="ok-t">✓ Auto</td><td class="warn-t">—</td><td class="ok-t">✓ Auto</td><td class="warn-t">—</td><td class="warn-t">—</td></tr>
+        <tr><td>③ Exponencialidad KS/CV</td><td class="warn-t">—</td><td class="warn-t">—</td><td class="warn-t">—</td><td class="warn-t">—</td><td class="ok-t">✓ Auto</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:var(--t3);margin-top:6px">* En Tab 3 el test ① no aplica porque cada paciente tiene su propia P_i (ver texto arriba).</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     LIMITACIONES
+════════════════════════════════════ -->
+<div id="pg-limites" class="page">
+  <div class="ph-tag">Uso responsable</div>
+  <h1 class="ph-title">Limitaciones, Cautelas y Niveles de Uso</h1>
+  <p class="ph-lead">Usar esta herramienta responsablemente implica conocer lo que no puede hacer y en qué condiciones sus resultados son insuficientemente precisos para justificar decisiones.</p>
+
+  <div class="sec">
+    <div class="sec-title">Limitaciones matemáticas conocidas de la implementación</div>
+    <div class="card">
+      <div class="card-head">⚠️ La interpolación convexa de matrices es una heurística</div>
+      <p>El modelo NH usa P(t) = (1−f(t))·P_base + f(t)·P_trat. Esta interpolación no preserva necesariamente la propiedad de ser un generador válido de CTMC. Para algunos valores de f(t), la fila resultante puede no ser exactamente una distribución de probabilidad válida — la herramienta normaliza por filas, pero la estructura puede no ser óptima.</p>
+      <p><strong>Implicación para investigación formal:</strong> compare los resultados con implementaciones que usen interpolación en el espacio de los generadores Q (exponenciación matricial logarítmica exacta). Paquetes R recomendados: <code>msm</code>, <code>ctmm</code>.</p>
+    </div>
+    <div class="card">
+      <div class="card-head">⚠️ Límites de los diagnósticos MCMC</div>
+      <p>El motor muestra R̂ dividido clásico y ESS con truncamiento de autocorrelaciones. Son diagnósticos implementados directamente; para investigación, contrastar con R̂ normalizado por rangos y ESS de colas en software especializado. Ningún indicador aislado garantiza convergencia.</p>
+    </div>
+    <div class="card">
+      <div class="card-head">⚠️ El test KS de exponencialidad es conservador</div>
+      <p>Como se detalla en la sección de tests, los p-valores son más altos de lo que serían con parámetros conocidos (Lilliefors, 1969). Un resultado verde no garantiza exponencialidad — puede simplemente no tener potencia suficiente con N &lt; 15 tiempos por estado.</p>
+    </div>
+    <div class="card">
+      <div class="card-head">Modelo poblacional por filas de origen</div>
+      <p>P_pob se calcula como media posterior de matrices individuales, conservando conteos por sujeto y estado de origen. La jerarquía usa una verosimilitud Dirichlet–multinomial y priors exponenciales para α. No es una fórmula arbitraria ni una garantía de validez clínica.</p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Cuándo los IC son demasiado amplios para decidir</div>
+    <p>Un IC muy amplio no es un error del modelo — es información honesta sobre la incertidumbre. El problema es que no permite cuantificar el efecto con la precisión necesaria para muchas decisiones.</p>
+    <div class="sem">
+      <div class="sr warn"><div class="dot"></div><div><strong>Reporte el rango, no solo el valor puntual.</strong>"La probabilidad de recuperación estimada es del 45% (IC 95% bootstrap: 22%–68%)" es considerablemente más honesto que "la probabilidad de recuperación es del 45%."</div></div>
+      <div class="sr warn"><div class="dot"></div><div><strong>Con IC amplio, solo concluya sobre la dirección del efecto.</strong>Afirme que el efecto parece positivo, pero evite reportar el tamaño como si fuera preciso.</div></div>
+      <div class="sr bad"><div class="dot"></div><div><strong>Si el IC cruza el valor nulo, no concluya efecto.</strong>Un IC que incluye 0 (para Δ) o 1 (para OR) no permite afirmar efecto en ninguna dirección. "Resultado nulo" es un resultado válido que debe reportarse como tal.</div></div>
+    </div>
+    <div class="recbox">
+      <div class="recbox-title">🔎 Estrategias para reducir la amplitud de los IC</div>
+      <ul>
+        <li>Aumentar el número de pacientes en la cohorte</li>
+        <li>Aumentar la longitud de las secuencias (más puntos temporales por paciente)</li>
+        <li>Reducir el número de estados si hay pocas transiciones entre algunos pares</li>
+        <li>Verificar que los estados no mezclen subgrupos muy heterogéneos</li>
+        <li>Usar diseños de medición más frecuentes si la dinámica clínica es rápida</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Niveles de uso adecuados</div>
+    <table class="gt">
+      <thead><tr><th>Propósito</th><th>Adecuación</th><th>Condiciones adicionales</th></tr></thead>
+      <tbody>
+        <tr><td>Exploración conceptual y diseño de estudios</td><td class="ok-t">Adecuado</td><td>Sin condiciones adicionales</td></tr>
+        <tr><td>Análisis descriptivo en publicaciones</td><td class="ok-t">Adecuado con cautelas</td><td>Reportar tests de validación, ICs y limitaciones de la implementación</td></tr>
+        <tr><td>Inferencia causal (¿el tratamiento <em>causa</em> mejora?)</td><td class="warn-t">Parcialmente adecuado</td><td>Requiere diseño con grupo control contemporáneo. La herramienta no puede inferir causalidad por sí sola</td></tr>
+        <tr><td>Toma de decisiones clínicas individuales directas</td><td class="bad-t">No recomendado</td><td>La herramienta modela poblaciones. Las predicciones individuales tienen alta incertidumbre con muestras pequeñas</td></tr>
+        <tr><td>Investigación formal con publicación arbitrada</td><td class="warn-t">Con validación adicional</td><td>Replicar resultados clave en R. Reportar R̂ formal de Gelman-Rubin para MCMC</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     REFS
+════════════════════════════════════ -->
+<div id="pg-refs" class="page">
+  <div class="ph-tag">Base científica</div>
+  <h1 class="ph-title">Referencias Bibliográficas</h1>
+  <p class="ph-lead">Fundamentos metodológicos de cada componente de la herramienta. Citar estas fuentes al reportar resultados.</p>
+
+  <div class="sec">
+    <div class="sec-title">Cadenas de Markov — Fundamentos</div>
+    <div class="card">
+      <p><strong>Norris, J. R. (1997).</strong> <em>Markov chains.</em> Cambridge University Press. <span class="pill pb">Cadenas homogéneas y no homogéneas</span></p>
+      <p style="margin-top:8px;color:var(--t2)">Referencia fundamental para la teoría de cadenas de Markov en tiempo discreto y continuo, incluyendo propiedades de convergencia y la propiedad de Markov de primer orden.</p>
+    </div>
+    <div class="card">
+      <p><strong>Kemeny, J. G., &amp; Snell, J. L. (1976).</strong> <em>Finite Markov chains.</em> Springer. <span class="pill pt">Tiempo de absorción</span></p>
+      <p style="margin-top:8px;color:var(--t2)">Tratamiento clásico de cadenas de Markov finitas con estados absorbentes, tiempos medios de absorción y matrices fundamentales.</p>
+    </div>
+    <div class="card">
+      <p><strong>Sonnenberg, F. A., &amp; Beck, J. R. (1993).</strong> Markov models in medical decision making: A practical guide. <em>Medical Decision Making, 13</em>(4), 322–338. <a href="https://doi.org/10.1177/0272989X9301300409" style="color:var(--blue)">https://doi.org/10.1177/0272989X9301300409</a></p>
+      <p style="margin-top:8px;color:var(--t2)">Guía práctica de referencia para el uso de cadenas de Markov en investigación clínica y toma de decisiones médicas.</p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Tests de propiedad markoviana</div>
+    <div class="card">
+      <p><strong>Tian, M., Li, B., &amp; Zhang, C. (2010).</strong> Goodness-of-fit test for Markov chains. <em>Communications in Statistics — Theory and Methods, 39</em>(6), 1103–1117. <a href="https://doi.org/10.1080/03610920902833511" style="color:var(--blue)">https://doi.org/10.1080/03610920902833511</a> <span class="pill pv">Test CK χ²</span></p>
+    </div>
+    <div class="card">
+      <p><strong>Raftery, A. E. (1985).</strong> A model for high-order Markov chains. <em>Journal of the Royal Statistical Society, Series B, 47</em>(3), 528–539. <a href="https://doi.org/10.1111/j.2517-6161.1985.tb01383.x" style="color:var(--blue)">https://doi.org/10.1111/j.2517-6161.1985.tb01383.x</a> <span class="pill pv">Test G² tripletes</span></p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">CTMC y test de exponencialidad</div>
+    <div class="card">
+      <p><strong>Weiss, G. H., &amp; Zelen, M. (1965).</strong> A semi-Markov model for clinical trials. <em>Journal of Applied Probability, 2</em>(2), 269–285. <a href="https://doi.org/10.2307/3212171" style="color:var(--blue)">https://doi.org/10.2307/3212171</a> <span class="pill pt">CTMC clínica, semi-Markov</span></p>
+    </div>
+    <div class="card">
+      <p><strong>Lilliefors, H. W. (1969).</strong> On the Kolmogorov-Smirnov test for the exponential distribution with mean unknown. <em>Journal of the American Statistical Association, 64</em>(325), 387–389. <a href="https://doi.org/10.1080/01621459.1969.10500984" style="color:var(--blue)">https://doi.org/10.1080/01621459.1969.10500984</a> <span class="pill pa">Test KS exponencial</span></p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Métodos numéricos</div>
+    <div class="card">
+      <p><strong>Moler, C., &amp; Van Loan, C. (2003).</strong> Nineteen dubious ways to compute the exponential of a matrix, twenty-five years later. <em>SIAM Review, 45</em>(1), 3–49. <a href="https://doi.org/10.1137/S0036144502418680" style="color:var(--blue)">https://doi.org/10.1137/S0036144502418680</a> <span class="pill pb">Exponencial matricial</span></p>
+    </div>
+    <div class="card">
+      <p><strong>Abramowitz, M., &amp; Stegun, I. (1964).</strong> <em>Handbook of mathematical functions.</em> National Bureau of Standards. §26.2.17. <span class="pill pb">Aproximación CDF normal (Wilson-Hilferty)</span></p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Inferencia bayesiana y MCMC</div>
+    <div class="card">
+      <p><strong>Gelman, A., Carlin, J. B., Stern, H. S., Dunson, D. B., Vehtari, A., &amp; Rubin, D. B. (2013).</strong> <em>Bayesian data analysis</em> (3.ª ed.). CRC Press. <span class="pill pv">MCMC, convergencia, HPD, Dirichlet</span></p>
+    </div>
+    <div class="card">
+      <p><strong>Efron, B., &amp; Hastie, T. (2016).</strong> <em>Computer age statistical inference.</em> Cambridge University Press. <span class="pill pt">Bootstrap, Empirical Bayes, shrinkage</span></p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Selección de modelos</div>
+    <div class="card">
+      <p><strong>Akaike, H. (1974).</strong> A new look at the statistical model identification. <em>IEEE Transactions on Automatic Control, 19</em>(6), 716–723. <a href="https://doi.org/10.1109/TAC.1974.1100705" style="color:var(--blue)">https://doi.org/10.1109/TAC.1974.1100705</a> <span class="pill pa">AIC</span></p>
+    </div>
+    <div class="card">
+      <p><strong>Vuong, Q. H. (1989).</strong> Likelihood ratio tests for model selection and non-nested hypotheses. <em>Econometrica, 57</em>(2), 307–333. <a href="https://doi.org/10.2307/1912557" style="color:var(--blue)">https://doi.org/10.2307/1912557</a> <span class="pill pa">Test de Vuong</span></p>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ════════════════════════════════════
+     GLOSARIO
+════════════════════════════════════ -->
+<div id="pg-glosario" class="page">
+  <div class="ph-tag">Referencia rápida</div>
+  <h1 class="ph-title">Glosario de Términos y Abreviaturas</h1>
+  <p class="ph-lead">Definiciones de los conceptos estadísticos, matemáticos y clínicos empleados en la herramienta y en esta guía, ordenadas alfabéticamente. Los términos que aparecen en <strong>negrita</strong> dentro de las definiciones tienen su propia entrada en el glosario.</p>
+
+  <div class="sec">
+    <div class="sec-title">A — C</div>
+    <table class="gt">
+      <thead><tr><th style="width:155px">Término / Abrev.</th><th>Definición</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>AIC</strong><br><span style="font-size:10.5px;color:var(--t2)">Akaike Information Criterion</span></td>
+          <td>Criterio de Información de Akaike. Evalúa la calidad de ajuste de un modelo penalizando su número de parámetros: <code>AIC = −2·LL + 2·k</code>. Menor AIC = mejor modelo. Empleado en Tab 1 para seleccionar automáticamente el modelo temporal (Sigmoide, Exponencial, Lineal). El modelo con ΔAIC = 0 es el ganador; ΔAIC &lt; 2 entre dos modelos indica equivalencia estadística.</td>
+        </tr>
+        <tr>
+          <td><strong>BIC</strong><br><span style="font-size:10.5px;color:var(--t2)">Bayesian Information Criterion</span></td>
+          <td>Criterio de Información Bayesiano. Similar al AIC pero con penalización más fuerte: <code>BIC = −2·LL + k·ln(n)</code>. Favorece modelos más parsimoniosos cuando n es grande. Recomendado sobre AIC cuando se tienen más de 100 transiciones observadas.</td>
+        </tr>
+        <tr>
+          <td><strong>Bootstrap</strong></td>
+          <td>Técnica de remuestreo no paramétrico. Repite el análisis sobre múltiples sub-muestras aleatorias con reemplazamiento (n = 150 en la herramienta) para estimar la distribución del estadístico de interés. Empleado en Tab 1 para construir bandas de IC del 95% sobre la evolución poblacional predicha.</td>
+        </tr>
+        <tr>
+          <td><strong>Cadena de Markov</strong></td>
+          <td>Proceso estocástico discreto o continuo en el que la probabilidad de transitar al estado siguiente depende <em>únicamente</em> del estado actual, nunca de la historia anterior (propiedad de Markov). Las cadenas homogéneas tienen la misma P en todo t; las no homogéneas (NH) la dejan variar con f(t).</td>
+        </tr>
+        <tr>
+          <td><strong>Chapman-Kolmogorov</strong></td>
+          <td>Test estadístico (Test CK, Test ①) que verifica si el modelo NH ajustado predice correctamente las transiciones observadas a múltiples lags (h = 2, 3, 4 U.T.). Compara distribuciones empíricas vs. esperadas mediante el estadístico χ². A partir de la v8 siempre usa el modelo de mejor AIC y lo indica en su título.</td>
+        </tr>
+        <tr>
+          <td><strong>CTMC</strong><br><span style="font-size:10.5px;color:var(--t2)">Continuous-Time Markov Chain</span></td>
+          <td>Cadena de Markov en tiempo continuo. Modela tiempos exactos de permanencia en cada estado (distribuidos exponencialmente) mediante la matriz generadora Q. Apropiada cuando el dato registra duraciones exactas de episodios, no solo estados en períodos discretos.</td>
+        </tr>
+        <tr>
+          <td><strong>CV</strong><br><span style="font-size:10.5px;color:var(--t2)">Coeficiente de Variación</span></td>
+          <td>Razón desviación estándar / media. Para una distribución exponencial teórica CV = 1 exactamente. En el test de exponencialidad de tiempos de permanencia (Tab 5), CV ≈ 1 es evidencia a favor del supuesto de CTMC.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">D — I</div>
+    <table class="gt">
+      <thead><tr><th style="width:155px">Término / Abrev.</th><th>Definición</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Δ Recuperación</strong></td>
+          <td>KPI de Tab 1. Diferencia en puntos porcentuales (pp) entre la proporción de pacientes en el estado de recuperación bajo el modelo NH (con tratamiento) y bajo la proyección homogénea (sin tratamiento), al final del horizonte temporal. Cuantifica el impacto atribuido a la intervención sobre la distribución poblacional.</td>
+        </tr>
+        <tr>
+          <td><strong>Dirichlet (dist.)</strong></td>
+          <td>Distribución de probabilidad sobre vectores de probabilidad. Usada como distribución a priori en el modelo jerárquico bayesiano (Tab 3): cada fila de la matriz de transición de cada paciente se modela como Dirichlet(α₁, …, αₘ). Los hiperparámetros α controlan la distribución poblacional esperada.</td>
+        </tr>
+        <tr>
+          <td><strong>Empirical Bayes (EB)</strong></td>
+          <td>Enfoque bayesiano donde el prior se estima de los mismos datos observados. En Tab 4, la predicción individual combina la información poblacional (P_pob, del modelo jerárquico) con el historial propio del paciente (P_MLE) mediante la fórmula de shrinkage: <code>P_EB = λ·P_pob + (1−λ)·P_MLE</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>f(t)</strong><br><span style="font-size:10.5px;color:var(--t2)">función de efecto temporal</span></td>
+          <td>Función escalar f ∈ [0, 1] que modela cómo evoluciona el efecto del tratamiento en el tiempo. Interpola entre P_base y P_trat: <code>P(t) = (1−f(t))·P_base + f(t)·P_trat</code>. Puede adoptar forma sigmoide, exponencial o lineal, seleccionada automáticamente por AIC.</td>
+        </tr>
+        <tr>
+          <td><strong>G²</strong></td>
+          <td>Estadístico de razón de verosimilitud del Test de Raftery. Cuantifica cuánto mejora la predicción del estado en t+1 al incluir el estado en t−1 como predictor adicional, más allá del estado en t. G² ≈ 0 indica que la dependencia de orden 2 no aporta información útil — la cadena es Markoviana de primer orden.</td>
+        </tr>
+        <tr>
+          <td><strong>HPD</strong><br><span style="font-size:10.5px;color:var(--t2)">Highest Posterior Density</span></td>
+          <td>Intervalo de credibilidad bayesiano al 95%. Región que contiene el 95% de la masa de la distribución posterior. Interpretación directa: "con 95% de probabilidad, el verdadero valor se encuentra en este intervalo dados los datos observados." Reportado en Tab 3 para cada parámetro del modelo jerárquico.</td>
+        </tr>
+        <tr>
+          <td><strong>IC / CI</strong><br><span style="font-size:10.5px;color:var(--t2)">Intervalo de Confianza</span></td>
+          <td>En el paradigma frecuentista, rango que contendría el verdadero parámetro en el 95% de experimentos repetidos. En la herramienta se obtiene por bootstrap (Tab 1, Tab 5) o como HPD bayesiano (Tab 3). Amplitud grande = incertidumbre alta.</td>
+        </tr>
+        <tr>
+          <td><strong>Índice de estado</strong></td>
+          <td>Entero 0, 1, 2, … M−1 que identifica cada estado clínico. El índice 0 corresponde obligatoriamente al peor estado; el índice M−1 al objetivo de mejora (recuperación). Este orden afecta cálculos de Δ, colores en gráficos y la dirección esperada de los efectos del tratamiento.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">K — M</div>
+    <table class="gt">
+      <thead><tr><th style="width:155px">Término / Abrev.</th><th>Definición</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>k</strong><br><span style="font-size:10.5px;color:var(--t2)">parámetro de velocidad</span></td>
+          <td>Parámetro escalar que controla la velocidad en las funciones de efecto temporal. <em>Sigmoide:</em> pendiente de la curva en la inflexión (mayor k = transición más abrupta). <em>Exponencial:</em> velocidad de decaimiento (mayor k = efecto inicial más rápido). Estimado por MLE. Sin unidades.</td>
+        </tr>
+        <tr>
+          <td><strong>KPI</strong><br><span style="font-size:10.5px;color:var(--t2)">Key Performance Indicator</span></td>
+          <td>Indicador clave de resultado. Panel numérico resumen que aparece tras ejecutar cada análisis. En Tab 1 incluye: % Recuperados, Modelo ganador (AIC), parámetros del modelo (variables según el modelo seleccionado) y Δ Recuperación.</td>
+        </tr>
+        <tr>
+          <td><strong>KS</strong><br><span style="font-size:10.5px;color:var(--t2)">test de Kolmogorov-Smirnov</span></td>
+          <td>Test no paramétrico que compara la distribución acumulada empírica de los tiempos de permanencia contra la CDF exponencial teórica con parámetro estimado de los datos. Usado en Tab 5 para verificar el supuesto de CTMC. Los p-valores son conservadores cuando el parámetro λ se estima del mismo conjunto de datos (corrección de Lilliefors, 1969).</td>
+        </tr>
+        <tr>
+          <td><strong>λ (lambda)</strong><br><span style="font-size:10.5px;color:var(--t2)">peso de shrinkage</span></td>
+          <td>En Tab 4: peso del prior poblacional en la predicción Empirical Bayes, ∈ [0, 1]. λ = 0.9 → 90% de la predicción proviene de la población; 10% del historial individual. Valor alto cuando el historial individual es corto o irregular; valor bajo cuando el historial es largo y confiable.</td>
+        </tr>
+        <tr>
+          <td><strong>LCG</strong><br><span style="font-size:10.5px;color:var(--t2)">Linear Congruential Generator</span></td>
+          <td>Algoritmo de generación de números pseudo-aleatorios con semilla fija. Usado en los 6 ejemplos controlados de Tab 1 (v8) para garantizar reproducibilidad: la misma semilla siempre produce las mismas secuencias, facilitando la comparación entre ejecuciones.</td>
+        </tr>
+        <tr>
+          <td><strong>LL / Log-L</strong><br><span style="font-size:10.5px;color:var(--t2)">Log-verosimilitud</span></td>
+          <td>Logaritmo de la función de verosimilitud. Mide qué tan probable es observar los datos bajo un modelo dado. Mayor LL = mejor ajuste. Base del AIC, BIC y del test de Vuong.</td>
+        </tr>
+        <tr>
+          <td><strong>M</strong></td>
+          <td>Número de estados clínicos definidos por el usuario (2 a 8). Determina el tamaño de todas las matrices (M × M), el número de parámetros del modelo de covariables y los grados de libertad de los tests estadísticos.</td>
+        </tr>
+        <tr>
+          <td><strong>MCMC</strong><br><span style="font-size:10.5px;color:var(--t2)">Markov Chain Monte Carlo</span></td>
+          <td>Familia de algoritmos que generan muestras de distribuciones posteriores complejas mediante cadenas de Markov. La herramienta implementa el algoritmo de Metropolis-Hastings con 5 cadenas paralelas. La convergencia se diagnostica visualmente (trazas) con R̂ dividido clásico y ESS aproximado.</td>
+        </tr>
+        <tr>
+          <td><strong>MLE / MV</strong><br><span style="font-size:10.5px;color:var(--t2)">Máxima Verosimilitud</span></td>
+          <td>Estimación por Máxima Verosimilitud: encuentra los parámetros que maximizan la probabilidad de observar los datos. Utilizado en Tab 1 para ajustar f(t), en Tab 2 para estimar coeficientes β, y en Tab 4 para estimar P_MLE individual.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">N — R</div>
+    <table class="gt">
+      <thead><tr><th style="width:155px">Término / Abrev.</th><th>Definición</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>NH / No Homogénea</strong></td>
+          <td>Cadena de Markov cuya matriz de transición P(t) varía en el tiempo. En la herramienta la variación sigue: <code>P(t) = (1−f(t))·P_base + f(t)·P_trat</code>. Contrasta con la cadena homogénea, donde P es constante en todo t.</td>
+        </tr>
+        <tr>
+          <td><strong>n.s.</strong></td>
+          <td>No significativo estadísticamente. El p-valor no supera el umbral α = 0.05. No implica ausencia de efecto — puede ser falta de potencia estadística (muestra insuficiente).</td>
+        </tr>
+        <tr>
+          <td><strong>OR</strong><br><span style="font-size:10.5px;color:var(--t2)">Odds Ratio</span></td>
+          <td>Razón de momios. En Tab 2: <code>OR = e^β</code>. OR &gt; 1 indica que la covariable aumenta los odds de esa transición; OR &lt; 1, que los reduce; OR = 1, sin efecto. Interpretación: "por cada unidad adicional de la covariable, los odds de esa transición se multiplican por OR, manteniendo las demás covariables constantes."</td>
+        </tr>
+        <tr>
+          <td><strong>P_base</strong></td>
+          <td>Matriz de transición basal estimada de las secuencias pre-tratamiento. Representa la dinámica de la condición clínica sin intervención activa. Usada como contrafactual "sin tratamiento" para calcular Δ Recuperación y como punto de partida de la interpolación f(t).</td>
+        </tr>
+        <tr>
+          <td><strong>P_EB</strong></td>
+          <td>Matriz de transición Empirical Bayes para un nuevo paciente. Combinación ponderada de P_pob (prior poblacional) y P_MLE (historial individual): <code>P_EB = λ·P_pob + (1−λ)·P_MLE</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>P_MLE</strong></td>
+          <td>Matriz de transición individual estimada por Máxima Verosimilitud desde el historial propio del paciente. Alta varianza cuando el historial es corto (muchas transiciones sin observar = celdas en cero). Se suaviza con shrinkage hacia P_pob.</td>
+        </tr>
+        <tr>
+          <td><strong>P_pob</strong></td>
+          <td>Matriz de transición poblacional estimada por el modelo jerárquico (Tab 3). Representa al "paciente promedio" de la cohorte de referencia. Usada como prior en la predicción individual de Tab 4.</td>
+        </tr>
+        <tr>
+          <td><strong>P_trat</strong></td>
+          <td>Matriz de transición bajo tratamiento completo, cuando f(t) = 1. Estimada de las últimas observaciones de la fase de tratamiento (40% final de cada secuencia). Representa la dinámica de mayor efecto terapéutico.</td>
+        </tr>
+        <tr>
+          <td><strong>p-valor</strong></td>
+          <td>Probabilidad de observar un estadístico de prueba tan extremo o más extremo que el obtenido, asumiendo que la hipótesis nula es verdadera. En los tests de la herramienta: p &lt; 0.05 → evidencia contra la hipótesis nula (ej. violación de Markov, efecto de covariable). <em>No</em> es la probabilidad de que la hipótesis nula sea verdadera.</td>
+        </tr>
+        <tr>
+          <td><strong>pp</strong><br><span style="font-size:10.5px;color:var(--t2)">puntos porcentuales</span></td>
+          <td>Unidad de diferencia aritmética entre dos porcentajes. 40% − 25% = 15 pp (no "15 por ciento más"). Usada en el KPI Δ Recuperación para evitar ambigüedades en la expresión del efecto del tratamiento.</td>
+        </tr>
+        <tr>
+          <td><strong>Propiedad de Markov</strong></td>
+          <td>Condición estadística de un proceso estocástico: el estado futuro depende <em>únicamente</em> del estado presente, no de la historia anterior (propiedad sin-memoria o memoryless). Su verificación es prerrequisito para que los modelos de esta herramienta sean estadísticamente válidos. Verificada por los Tests CK (①) y Raftery (②).</td>
+        </tr>
+        <tr>
+          <td><strong>Q</strong><br><span style="font-size:10.5px;color:var(--t2)">matriz generadora CTMC</span></td>
+          <td>Matriz de tasas de transición instantáneas de una CTMC. Elementos fuera de la diagonal: tasas de transición entre estados (Q[i][j] ≥ 0, i ≠ j). Diagonal: Q[i][i] = −Σⱼ≠ᵢ Q[i][j]. El tiempo medio de permanencia en el estado i es 1/|Q[i][i]|.</td>
+        </tr>
+        <tr>
+          <td><strong>r-bar</strong></td>
+          <td>Etiqueta antigua: ya no se utiliza como diagnóstico. La correlación descriptiva compara MLE o parámetros simulados con medias posteriores individuales.<code>coda</code> o <code>rstan</code> en R.</td>
+        </tr>
+        <tr>
+          <td><strong>Raftery (test)</strong></td>
+          <td>Test de Razón de Verosimilitud (Test ②, LRT) que verifica si la dependencia es de primer orden (basta con el estado actual) o si el estado en t−2 añade información predictiva adicional. Opera sobre conteos de tripletes (X_{t−1}, X_t, X_{t+1}). Independiente del modelo temporal f(t). Aplicado en Tabs 1 y 3.</td>
+        </tr>
+        <tr>
+          <td><strong>R̂ (R-hat)</strong></td>
+          <td>Estadístico formal de Gelman y Rubin para diagnóstico de convergencia MCMC. Compara la varianza dentro de cada cadena con la varianza entre cadenas. La herramienta informa R̂ dividido clásico y ESS. Un R̂ favorable no demuestra convergencia; para diagnósticos adicionales use <code>coda</code> en R.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">S — Z y símbolos</div>
+    <table class="gt">
+      <thead><tr><th style="width:155px">Término / Abrev.</th><th>Definición</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Secuencia</strong></td>
+          <td>Lista de índices de estado observados para un paciente en orden temporal. Formato de ingreso: <code>P1: 0, 0, 1, 2, 2</code>. Cada número es una observación en un período (una U.T.). Mínimo recomendado: 6 observaciones por secuencia para que los tests estadísticos sean fiables.</td>
+        </tr>
+        <tr>
+          <td><strong>Shrinkage</strong><br><span style="font-size:10.5px;color:var(--t2)">contracción bayesiana</span></td>
+          <td>Proceso por el que la estimación individual se "contrae" hacia la media poblacional cuando los datos propios son escasos o ruidosos. Controlado por λ en la predicción Empirical Bayes. Shrinkage alto (λ → 1): la predicción refleja principalmente la población. Shrinkage bajo (λ → 0): refleja principalmente el historial individual.</td>
+        </tr>
+        <tr>
+          <td><strong>Softmax</strong></td>
+          <td>Función que convierte un vector de log-odds en probabilidades que suman exactamente 1: <code>P(j) = e^ηⱼ / Σₖ e^ηₖ</code>. Usada en el modelo de covariables (Tab 2) para garantizar que las probabilidades predichas de transición formen una distribución válida sobre todos los estados destino.</td>
+        </tr>
+        <tr>
+          <td><strong>t₀</strong></td>
+          <td>Tiempo de partida de una observación. En el Test CK, los valores esperados se calculan promediando los productos ordenados de matrices NH para cada t₀ observado en los datos, no únicamente para t₀ = 0. Esto captura la no-homogeneidad correctamente.</td>
+        </tr>
+        <tr>
+          <td><strong>U.T.</strong><br><span style="font-size:10.5px;color:var(--t2)">Unidad Temporal</span></td>
+          <td>Unidad de tiempo empleada en las observaciones. Puede ser semanas, días, meses, sesiones terapéuticas u otro intervalo regular. La herramienta no asume ninguna unidad fija; el usuario define la unidad al diseñar la codificación de sus datos. Todos los parámetros temporales (punto de inflexión, rampa lineal) se expresan en U.T.</td>
+        </tr>
+        <tr>
+          <td><strong>Vuong (test)</strong></td>
+          <td>Test de razón de verosimilitud para comparar directamente dos modelos no anidados. p &lt; 0.05 indica que uno de los modelos ajusta significativamente mejor que el otro. Mostrado en la tabla de Comparación de Modelos Temporales junto con AIC y BIC.</td>
+        </tr>
+        <tr>
+          <td><strong>α (alpha)</strong><br><span style="font-size:10.5px;color:var(--t2)">hiperparámetro Dirichlet</span></td>
+          <td>Vector de hiperparámetros del prior Dirichlet en el modelo jerárquico (Tab 3). Controla la distribución poblacional esperada de las probabilidades de transición. Valor αⱼ alto → esa transición es más probable a nivel poblacional. Suma Σαⱼ grande → baja heterogeneidad entre pacientes (información a priori fuerte).</td>
+        </tr>
+        <tr>
+          <td><strong>β (beta)</strong><br><span style="font-size:10.5px;color:var(--t2)">coeficiente de regresión</span></td>
+          <td>Coeficiente de la regresión logística multinomial (Tab 2). Representa el cambio en el log-odds de una transición específica por cada unidad de incremento en la covariable, manteniendo las demás constantes. <code>OR = e^β</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>χ² (chi cuadrado)</strong></td>
+          <td>Estadístico de bondad de ajuste. En el Test CK: suma ponderada de discrepancias al cuadrado entre proporciones observadas y esperadas por el modelo NH. Grados de libertad: M−1 por fila de estado de origen evaluada. Se convierte en p-valor mediante la distribución χ².</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<script>
+function go(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('on'));
+  document.getElementById('pg-' + id).classList.add('on');
+  if(el){el.classList.add('on');document.querySelectorAll('.nav-link').forEach(n=>n.removeAttribute('aria-current'));el.setAttribute('aria-current','page');}
+}
+</script>
+</body>
+</html>

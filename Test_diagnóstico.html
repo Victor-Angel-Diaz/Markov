@@ -1,0 +1,1959 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bayes Toolbox · Psicología Clínica</title>
+  <meta name="description"
+    content="Herramienta bayesiana interactiva para diagnóstico en psicología clínica: Valores Predictivos (VPP/VPN), Razones de Verosimilitud (LR+/LR−) y actualización de Odds.">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    /* ══════════════════════════════════════════
+   DESIGN TOKENS — Clinical White / Cobalt
+══════════════════════════════════════════ */
+    :root {
+      --bg: #f4f6fb;
+      --surface: #ffffff;
+      --surface2: #f0f3fa;
+      --surface3: #e8edf8;
+      --border: #d6dcea;
+      --border2: #c2cce0;
+
+      --cobalt: #1a56db;
+      --cobalt-d: #1445b8;
+      --cobalt-l: #e8eeff;
+      --cobalt-m: #c7d5fc;
+
+      --amber: #d97706;
+      --amber-l: #fef3c7;
+      --amber-m: #fde68a;
+
+      --green: #059669;
+      --green-l: #d1fae5;
+      --red: #dc2626;
+      --red-l: #fee2e2;
+      --violet: #7c3aed;
+      --violet-l: #ede9fe;
+      --slate: #475569;
+      --muted: #526277;
+
+      --t0: #0f172a;
+      --t1: #1e293b;
+      --t2: #475569;
+      --t3: #526277;
+
+      --r: 10px;
+      --r-lg: 16px;
+      --sh: 0 2px 16px rgba(15, 23, 42, .08);
+      --sh2: 0 8px 40px rgba(15, 23, 42, .12);
+      --tr: .18s ease;
+
+      /* ── Alias estándares (V-01) ── */
+      --accent: var(--cobalt);
+      --accent-l: var(--cobalt-l);
+      --ok: var(--green);
+      --warn: var(--amber);
+      --crit: var(--red);
+      --r2: var(--red-l);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--t0);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Subtle dot grid ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(var(--border) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: .04;
+    }
+
+    body>* {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ══════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════ */
+    header {
+      background: linear-gradient(135deg, #0d1b3e 0%, #1a3570 60%, #1a56db 100%);
+      padding: 32px 44px 28px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      box-shadow: 0 4px 32px rgba(26, 86, 219, .25);
+    }
+
+    .header-left h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -.5px;
+    }
+
+    .header-left h1 span {
+      color: #93c5fd;
+    }
+
+    .header-left p {
+      color: rgba(255, 255, 255, .65);
+      font-size: 12.5px;
+      margin-top: 4px;
+      letter-spacing: .3px;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .hbadge {
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-family: 'IBM Plex Mono', monospace;
+      background: rgba(255, 255, 255, .12);
+      border: 1px solid rgba(255, 255, 255, .2);
+      color: rgba(255, 255, 255, .85);
+    }
+
+    .hbadge.hb-amber {
+      background: rgba(217, 119, 6, .25);
+      border-color: rgba(252, 211, 77, .4);
+      color: #fcd34d;
+    }
+
+    .hbadge.hb-green {
+      background: rgba(5, 150, 105, .25);
+      border-color: rgba(110, 231, 183, .4);
+      color: #6ee7b7;
+    }
+
+    /* ══════════════════════════════════════════
+   TABS
+══════════════════════════════════════════ */
+    .tab-bar {
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      padding: 0 44px;
+      gap: 0;
+      overflow-x: auto;
+      box-shadow: var(--sh);
+    }
+
+    .tab-bar::-webkit-scrollbar {
+      height: 3px;
+    }
+
+    .tab-bar::-webkit-scrollbar-thumb {
+      background: var(--cobalt-m);
+      border-radius: 2px;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--t3);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 12.5px;
+      font-weight: 600;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      padding: 14px 22px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: var(--tr);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tab-btn:hover {
+      color: var(--t0);
+    }
+
+    .tab-btn.active {
+      color: var(--cobalt);
+      border-bottom-color: var(--cobalt);
+    }
+
+    /* ══════════════════════════════════════════
+   PAGE LAYOUT
+══════════════════════════════════════════ */
+    .page {
+      display: none;
+      padding: 32px 44px;
+      max-width: 1380px;
+      margin: 0 auto;
+      animation: fadeIn .3s ease;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .layout-1-2 {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .layout-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .col {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    @media(max-width: 1000px) {
+
+      .layout-1-2,
+      .layout-2 {
+        grid-template-columns: 1fr;
+      }
+
+      header,
+      .tab-bar,
+      .page {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+    }
+
+    /* ══════════════════════════════════════════
+   CARDS
+══════════════════════════════════════════ */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 22px 24px;
+      box-shadow: var(--sh);
+    }
+
+    .card-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--t0);
+    }
+
+    .card-head .pip {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ══════════════════════════════════════════
+   CONTROLS
+══════════════════════════════════════════ */
+    .ctrl {
+      margin-bottom: 16px;
+    }
+
+    .ctrl label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--t2);
+      margin-bottom: 6px;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+    }
+
+    .ctrl label .cv {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--cobalt);
+      background: var(--cobalt-l);
+      padding: 1px 8px;
+      border-radius: 4px;
+      text-transform: none;
+    }
+
+    input[type=range] {
+      width: 100%;
+      height: 5px;
+      accent-color: var(--cobalt);
+      cursor: pointer;
+    }
+
+    input[type=number],
+    input[type=text] {
+      width: 100%;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 7px;
+      color: var(--t0);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color var(--tr), box-shadow var(--tr);
+    }
+
+    input[type=number]:focus,
+    input[type=text]:focus {
+      border-color: var(--cobalt);
+      box-shadow: 0 0 0 3px rgba(26, 86, 219, .1);
+    }
+
+    .input-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .input-group.g3 {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .field-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--t3);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 5px;
+    }
+
+    /* ══════════════════════════════════════════
+   BUTTONS
+══════════════════════════════════════════ */
+    .btn {
+      width: 100%;
+      padding: 11px 16px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--tr);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--cobalt), var(--cobalt-d));
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(26, 86, 219, .3);
+    }
+
+    .btn-primary:hover {
+      opacity: .9;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(26, 86, 219, .35);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-sm {
+      width: auto;
+      padding: 6px 14px;
+      font-size: 11.5px;
+    }
+
+    /* ══════════════════════════════════════════
+   RESULTS TABLE
+══════════════════════════════════════════ */
+    .rtbl {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .rtbl th {
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--t3);
+      padding: 6px 12px;
+      border-bottom: 2px solid var(--border);
+      background: var(--surface2);
+    }
+
+    .rtbl th:first-child {
+      border-radius: 6px 0 0 0;
+    }
+
+    .rtbl th:last-child {
+      border-radius: 0 6px 0 0;
+    }
+
+    .rtbl td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--surface3);
+      font-size: 12.5px;
+      vertical-align: middle;
+    }
+
+    .rtbl tr:last-child td {
+      border-bottom: none;
+    }
+
+    .rtbl tr:hover td {
+      background: var(--cobalt-l);
+    }
+
+    .rtbl td.test-name {
+      font-weight: 700;
+      color: var(--t0);
+      font-size: 13px;
+    }
+
+    .rtbl td.mono {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+    }
+
+    .rtbl td.vpp {
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+    }
+
+    .rtbl td.vpn {
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+    }
+
+    /* colour bands for VPP/VPN */
+    .pct-excellent {
+      color: var(--green);
+      background: var(--green-l);
+      border-radius: 4px;
+      padding: 2px 7px;
+    }
+
+    .pct-good {
+      color: #0369a1;
+      background: #e0f2fe;
+      border-radius: 4px;
+      padding: 2px 7px;
+    }
+
+    .pct-moderate {
+      color: var(--amber);
+      background: var(--amber-l);
+      border-radius: 4px;
+      padding: 2px 7px;
+    }
+
+    .pct-poor {
+      color: var(--red);
+      background: var(--red-l);
+      border-radius: 4px;
+      padding: 2px 7px;
+    }
+
+    /* LR colour */
+    .lr-excellent {
+      color: var(--green);
+      font-weight: 600;
+    }
+
+    .lr-good {
+      color: #0369a1;
+      font-weight: 600;
+    }
+
+    .lr-moderate {
+      color: var(--amber);
+      font-weight: 600;
+    }
+
+    .lr-poor {
+      color: var(--red);
+      font-weight: 600;
+    }
+
+    /* ══════════════════════════════════════════
+   KPI ROW
+══════════════════════════════════════════ */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    @media(max-width:800px) {
+      .kpi-row {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 14px 16px;
+      box-shadow: var(--sh);
+    }
+
+    .kpi-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      color: var(--t3);
+      margin-bottom: 4px;
+    }
+
+    .kpi-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: var(--t0);
+    }
+
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--t3);
+      margin-top: 2px;
+    }
+
+    .kpi.kpi-blue {
+      border-top: 3px solid var(--cobalt);
+    }
+
+    .kpi.kpi-green {
+      border-top: 3px solid var(--green);
+    }
+
+    .kpi.kpi-amber {
+      border-top: 3px solid var(--amber);
+    }
+
+    .kpi.kpi-violet {
+      border-top: 3px solid var(--violet);
+    }
+
+    /* ══════════════════════════════════════════
+   CHARTS
+══════════════════════════════════════════ */
+    .chart-wrap {
+      position: relative;
+      height: 260px;
+    }
+
+    .chart-wrap.tall {
+      height: 320px;
+    }
+
+    /* ══════════════════════════════════════════
+   INTERPRETATION BOX
+══════════════════════════════════════════ */
+    .ibox {
+      background: linear-gradient(135deg, #f8faff 0%, #eef3ff 100%);
+      border: 1px solid var(--cobalt-m);
+      border-left: 4px solid var(--cobalt);
+      border-radius: 0 var(--r) var(--r) 0;
+      padding: 20px 22px;
+      animation: fadeIn .35s ease;
+    }
+
+    .ibox-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Playfair Display', serif;
+      font-size: .95rem;
+      font-weight: 600;
+      color: var(--t0);
+      margin-bottom: 16px;
+    }
+
+    .ibox-head .iicon {
+      font-size: 18px;
+    }
+
+    .itag {
+      margin-left: auto;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      padding: 2px 9px;
+      border-radius: 4px;
+      background: var(--cobalt-l);
+      border: 1px solid var(--cobalt-m);
+      color: var(--cobalt);
+    }
+
+    .iblock {
+      margin-bottom: 14px;
+    }
+
+    .iblock:last-child {
+      margin-bottom: 0;
+    }
+
+    .iblock-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      color: var(--cobalt);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .iblock-title::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--cobalt);
+      flex-shrink: 0;
+    }
+
+    .iblock p {
+      font-size: 12.5px;
+      color: var(--t1);
+      line-height: 1.8;
+    }
+
+    .iblock p strong {
+      color: var(--t0);
+    }
+
+    .iblock p em {
+      font-style: normal;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+    }
+
+    .idivider {
+      height: 1px;
+      background: var(--cobalt-m);
+      margin: 12px 0;
+      opacity: .5;
+    }
+
+    .hval {
+      display: inline-flex;
+      align-items: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11.5px;
+      padding: 1px 8px;
+      border-radius: 4px;
+    }
+
+    .hval-blue {
+      background: var(--cobalt-l);
+      color: var(--cobalt);
+      border: 1px solid var(--cobalt-m);
+    }
+
+    .hval-green {
+      background: var(--green-l);
+      color: var(--green);
+      border: 1px solid #a7f3d0;
+    }
+
+    .hval-amber {
+      background: var(--amber-l);
+      color: var(--amber);
+      border: 1px solid var(--amber-m);
+    }
+
+    .hval-red {
+      background: var(--red-l);
+      color: var(--red);
+      border: 1px solid #fca5a5;
+    }
+
+    .hval-violet {
+      background: var(--violet-l);
+      color: var(--violet);
+      border: 1px solid #c4b5fd;
+    }
+
+    .ibox-pending {
+      color: var(--t3);
+      font-size: 12.5px;
+      font-style: italic;
+      padding: 10px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ══════════════════════════════════════════
+   FORMULA STRIP
+══════════════════════════════════════════ */
+    .formula-strip {
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .fml {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11.5px;
+      color: var(--cobalt);
+      background: var(--surface);
+      padding: 3px 10px;
+      border-radius: 5px;
+      border: 1px solid var(--cobalt-m);
+    }
+
+    .fml-label {
+      font-size: 11px;
+      color: var(--t3);
+    }
+
+    /* ══════════════════════════════════════════
+   CUSTOM TEST EDITOR
+══════════════════════════════════════════ */
+    .test-editor-row {
+      display: grid;
+      grid-template-columns: 1fr 70px 70px 36px;
+      gap: 8px;
+      align-items: end;
+      margin-bottom: 8px;
+    }
+
+    .test-editor-row input[type=text] {
+      font-family: 'IBM Plex Sans', sans-serif;
+    }
+
+    .del-btn {
+      background: var(--red-l);
+      border: 1px solid #fca5a5;
+      color: var(--red);
+      border-radius: 6px;
+      padding: 9px 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      transition: var(--tr);
+    }
+
+    .del-btn:hover {
+      background: #fecaca;
+    }
+
+    .add-btn {
+      background: var(--green-l);
+      border: 1px solid #a7f3d0;
+      color: var(--green);
+      border-radius: 6px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: var(--tr);
+    }
+
+    .add-btn:hover {
+      background: #bbf7d0;
+    }
+
+    /* ══════════════════════════════════════════
+   CHIP / TAG
+══════════════════════════════════════════ */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .chip-ok {
+      background: var(--green-l);
+      border: 1px solid #a7f3d0;
+      color: var(--green);
+    }
+
+    .chip-warn {
+      background: var(--amber-l);
+      border: 1px solid var(--amber-m);
+      color: var(--amber);
+    }
+
+    .chip-bad {
+      background: var(--red-l);
+      border: 1px solid #fca5a5;
+      color: var(--red);
+    }
+
+    .chip-info {
+      background: var(--cobalt-l);
+      border: 1px solid var(--cobalt-m);
+      color: var(--cobalt);
+    }
+
+    /* ══════════════════════════════════════════
+   ODDS METER
+══════════════════════════════════════════ */
+    .odds-bar {
+      height: 8px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--red-l) 0%, var(--amber-l) 40%, var(--green-l) 70%, var(--green) 100%);
+      margin: 8px 0;
+      position: relative;
+    }
+
+    .odds-needle {
+      width: 12px;
+      height: 16px;
+      background: var(--cobalt);
+      border-radius: 3px;
+      position: absolute;
+      top: -4px;
+      transform: translateX(-50%);
+      transition: left .5s ease;
+    }
+
+    /* ══════════════════════════════════════════
+   SECTION TITLE
+══════════════════════════════════════════ */
+    .stitle {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--t0);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stitle small {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 12px;
+      color: var(--t3);
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--cobalt-m);
+      border-radius: 3px;
+    }
+  /* ═══ ACCESIBILIDAD Y ENTREGA · v3.1 ═══ */
+:root { --tr:.2s ease; }
+:focus-visible { outline:3px solid #3b82f6;outline-offset:3px; }
+.audit-controls { padding:12px 20px;margin:12px auto;max-width:1400px;border:1px solid currentColor;border-radius:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font:inherit; }
+.audit-controls input { width:130px; }
+.audit-controls p { flex-basis:100%;margin:0;font-size:14px;line-height:1.6; }
+button,.tab-btn,.nav-link,input[type=number],select { min-height:44px; }
+.preset-chip { font:inherit; }
+table { max-width:100%; }
+canvas { max-width:100%; }
+@media(max-width:799px) {
+  .audit-controls { margin:8px;padding:12px; }
+  .grid,.grid-2,.layout,.main-grid,.kpi-row,.metrics-row { grid-template-columns:minmax(0,1fr)!important; }
+  .card,.panel { min-width:0; }
+  .tab-bar,.tabs,.nav-tabs { overflow-x:auto; }
+  .matrix-table { overflow-x:auto;max-width:100%; }
+}
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important;transition:none!important;scroll-behavior:auto!important; } }
+
+</style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <h1>Bayes <span>Toolbox</span></h1>
+      <p>Herramienta Bayesiana de Diagnóstico para Psicología Clínica — Valores Predictivos &amp; Razones de
+        Verosimilitud</p>
+      <div class="badge-row">
+        <span class="hbadge hb-green">✓ VPP / VPN Dinámicos</span>
+        <span class="hbadge hb-amber">LR+ / LR−</span>
+        <span class="hbadge">Odds Bayesianos</span>
+        <span class="hbadge">MATLAB R2019a</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- TABS -->
+  <div class="tab-bar" role="tablist">
+    <button class="tab-btn active" id="tabSingle" onclick="showTab('single',this)" role="tab" aria-selected="true"
+      aria-controls="tab-single">
+      🔬 Un Solo Test
+    </button>
+    <button class="tab-btn" id="tabCompare" onclick="showTab('compare',this)" role="tab" aria-selected="false"
+      aria-controls="tab-compare">
+      ⚖️ Comparador de Tests
+    </button>
+    <button class="tab-btn" id="tabTheory" onclick="showTab('theory',this)" role="tab" aria-selected="false"
+      aria-controls="tab-theory">
+      📖 Fundamentos
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+     TAB 1: UN SOLO TEST
+══════════════════════════════════════════ -->
+  <div id="tab-single" class="page active" role="tabpanel" aria-labelledby="tabSingle">
+    <p class="stitle">Un Solo Test <small>Cálculo bayesiano completo para cualquier instrumento diagnóstico</small></p>
+    <div class="layout-1-2">
+
+      <!-- LEFT: controls -->
+      <div class="col">
+        <div class="card">
+          <div class="card-head"><span class="pip" style="background:var(--cobalt)"></span>Parámetros del Test</div>
+
+          <!-- Presets (I-01) -->
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="presetBtns">
+            <button class="add-btn" onclick="loadPreset('depresion')"
+              style="background:var(--cobalt-l);border-color:var(--cobalt-m);color:var(--cobalt)">🏥 Depresión
+              Mayor</button>
+            <button class="add-btn" onclick="loadPreset('ansiedad')"
+              style="background:var(--amber-l);border-color:var(--amber-m);color:var(--amber)">💡 Ansiedad
+              Generalizada</button>
+            <button class="add-btn" onclick="loadPreset('tdah')"
+              style="background:var(--green-l);border-color:#a7f3d0;color:var(--green)">🎯 TDAH Infantil</button>
+          </div>
+
+          <div class="ctrl">
+            <label for="sl-prev">Prevalencia <em>P(E)</em> <span class="cv" id="cv-prev">0.20</span></label>
+            <input type="range" id="sl-prev" min="0.01" max="0.60" step="any" value="0.20"
+              oninput="syncSl('sl-prev','cv-prev',2); computeSingle()">
+          </div>
+          <div class="ctrl">
+            <label for="sl-sens">Sensibilidad <span class="cv" id="cv-sens">0.88</span></label>
+            <input type="range" id="sl-sens" min="0.50" max="1.00" step="0.01" value="0.88"
+              oninput="syncSl('sl-sens','cv-sens',2); computeSingle()">
+          </div>
+          <div class="ctrl">
+            <label for="sl-espec">Especificidad <span class="cv" id="cv-espec">0.88</span></label>
+            <input type="range" id="sl-espec" min="0.50" max="1.00" step="0.01" value="0.88"
+              oninput="syncSl('sl-espec','cv-espec',2); computeSingle()">
+          </div>
+
+          <div class="formula-strip" style="margin-bottom:14px">
+            <span class="fml-label">Fórmulas:</span>
+            <span class="fml">VPP = Sens·P / (Sens·P + (1−Esp)·(1−P))</span>
+            <span class="fml">LR+ = Sens / (1−Esp)</span>
+          </div>
+
+          <button class="btn btn-primary" onclick="computeSingle()">▶ Calcular</button>
+          <button class="btn btn-sm" onclick="exportSingleResults()"
+            style="margin-top:8px;background:var(--surface2);color:var(--t2);border:1px solid var(--border)">📋 Copiar
+            Resumen</button>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-row">
+          <div class="kpi kpi-blue">
+            <div class="kpi-label">VPP</div>
+            <div class="kpi-value" id="kpi-vpp">—</div>
+            <div class="kpi-sub">Prob. con test +</div>
+          </div>
+          <div class="kpi kpi-green">
+            <div class="kpi-label">VPN</div>
+            <div class="kpi-value" id="kpi-vpn">—</div>
+            <div class="kpi-sub">Prob. sin test −</div>
+          </div>
+          <div class="kpi kpi-amber">
+            <div class="kpi-label">LR+</div>
+            <div class="kpi-value" id="kpi-lrp">—</div>
+            <div class="kpi-sub">Razón verosim. +</div>
+          </div>
+          <div class="kpi kpi-violet">
+            <div class="kpi-label">LR−</div>
+            <div class="kpi-value" id="kpi-lrm">—</div>
+            <div class="kpi-sub">Razón verosim. −</div>
+          </div>
+        </div>
+
+        <!-- Odds update -->
+        <div class="card">
+          <div class="card-head"><span class="pip" style="background:var(--violet)"></span>Actualización de Odds</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div>
+              <div class="field-label">Odds previas</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:1.1rem;color:var(--t0)" id="odds-pre">—</div>
+              <div class="kpi-sub">P/(1−P)</div>
+            </div>
+            <div>
+              <div class="field-label">Odds posteriores (LR+)</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:1.1rem;color:var(--cobalt)" id="odds-post">—
+              </div>
+              <div class="kpi-sub">Odds·LR+</div>
+            </div>
+          </div>
+          <div class="odds-bar" style="margin-top:14px">
+            <div class="odds-needle" id="odds-needle" style="left:20%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-top:2px">
+            <span>Baja prob.</span><span>Alta prob.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: charts + interpretation -->
+      <div class="col">
+        <div class="card">
+          <div class="card-head"><span class="pip" style="background:var(--cobalt)"></span>VPP y VPN según Prevalencia
+          </div>
+          <div class="chart-wrap tall"><canvas id="c-single-curves"></canvas></div>
+          <!-- Leyenda externa (R-03) -->
+          <div style="display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--t2);align-items:center">
+            <span style="display:flex;align-items:center;gap:5px"><span
+                style="width:10px;height:10px;border-radius:50%;background:#1a56db;flex-shrink:0"></span>VPP</span>
+            <span style="display:flex;align-items:center;gap:5px"><span
+                style="width:10px;height:10px;border-radius:50%;background:#059669;flex-shrink:0"></span>VPN</span>
+            <span style="display:flex;align-items:center;gap:5px"><span
+                style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid #d97706;flex-shrink:0"></span>Prevalencia
+              actual</span>
+          </div>
+          <p style="font-size:11px;color:var(--t3);margin-top:8px;font-style:italic">
+            La línea vertical punteada marca la prevalencia seleccionada. Observa cómo el VPP colapsa a valores bajos a
+            baja prevalencia.
+          </p>
+        </div>
+
+        <!-- Fagan nomogram simulation -->
+        <div class="card">
+          <div class="card-head"><span class="pip" style="background:var(--amber)"></span>Probabilidad Post-Test</div>
+          <div class="chart-wrap"><canvas id="c-single-post"></canvas></div>
+        </div>
+
+        <div id="ibox-single" class="ibox">
+          <div class="ibox-pending">⟳ Ajusta los parámetros para ver la interpretación</div>
+        </div>
+
+        <!-- Disclaimer ético (R-01) -->
+        <div
+          style="background:var(--amber-l);border:1px solid var(--amber-m);border-radius:var(--r);padding:14px 18px;margin-top:12px;font-size:12px;color:var(--amber);display:flex;align-items:flex-start;gap:10px;line-height:1.5">
+          <span style="font-size:1.2rem;flex-shrink:0">⚠️</span>
+          <div><strong>Aviso ético:</strong> Los resultados de esta herramienta son de naturaleza probabilística y están
+            basados en el Teorema de Bayes aplicado a parámetros estadísticos del test. <strong>No constituyen
+              diagnóstico clínico</strong> ni sustituyen el juicio profesional. Cualquier decisión diagnóstica debe ser
+            tomada por profesionales cualificados.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+     TAB 2: COMPARADOR
+══════════════════════════════════════════ -->
+  <div id="tab-compare" class="page" role="tabpanel" aria-labelledby="tabCompare">
+    <p class="stitle">Comparador de Tests <small>PHQ-9, BDI-II, CES-D y tests personalizados</small></p>
+    <div class="layout-1-2">
+
+      <!-- LEFT -->
+      <div class="col">
+        <div class="card">
+          <div class="card-head"><span class="pip" style="background:var(--cobalt)"></span>Prevalencia de Consulta</div>
+          <div class="ctrl">
+            <label for="sl-cprev">Prevalencia <em>P(E)</em> <span class="cv" id="cv-cprev">0.20</span></label>
+            <input type="range" id="sl-cprev" min="0.01" max="0.60" step="0.01" value="0.20"
+              oninput="syncSl('sl-cprev','cv-cprev',2); computeCompare()">
+          </div>
+          <button class="btn btn-primary" onclick="computeCompare()">▶ Comparar</button>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="pip" style="background:var(--green)"></span>Tests Incluidos</div>
+          <div style="font-size:10.5px;color:var(--t3);margin-bottom:10px;font-style:italic">
+            Los tres primeros son los tests predefinidos del código MATLAB. Puedes editar o agregar tests
+            personalizados.
+          </div>
+          <div id="test-list"></div>
+          <button class="add-btn" onclick="addTest()" style="margin-top:10px">+ Agregar Test</button>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="col">
+        <div class="card">
+          <div class="card-head"><span class="pip" style="background:var(--cobalt)"></span>Tabla Comparativa</div>
+          <div style="overflow-x:auto">
+            <table class="rtbl" id="tbl-compare">
+              <thead>
+                <tr>
+                  <th>Test</th>
+                  <th>Sens.</th>
+                  <th>Espec.</th>
+                  <th>LR+</th>
+                  <th>LR−</th>
+                  <th>VPP</th>
+                  <th>VPN</th>
+                  <th>Recomendación</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-compare">
+                <tr>
+                  <td colspan="8" style="color:var(--t3);text-align:center;padding:20px">— Ejecuta la comparación —</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="layout-2">
+          <div class="card">
+            <div class="card-head"><span class="pip" style="background:var(--cobalt)"></span>VPP por Prevalencia</div>
+            <div class="chart-wrap"><canvas id="c-comp-vpp"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="pip" style="background:var(--green)"></span>VPN por Prevalencia</div>
+            <div class="chart-wrap"><canvas id="c-comp-vpn"></canvas></div>
+          </div>
+        </div>
+
+        <div id="ibox-compare" class="ibox">
+          <div class="ibox-pending">⟳ Ejecuta la comparación para ver el análisis</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Disclaimer ético comparador (R-01) -->
+    <div
+      style="background:var(--amber-l);border:1px solid var(--amber-m);border-radius:var(--r);padding:14px 18px;margin-top:16px;font-size:12px;color:var(--amber);display:flex;align-items:flex-start;gap:10px;line-height:1.5;max-width:1380px;margin-left:auto;margin-right:auto">
+      <span style="font-size:1.2rem;flex-shrink:0">⚠️</span>
+      <div><strong>Aviso ético:</strong> Los resultados comparativos son de naturaleza probabilística y dependen de la
+        prevalencia del contexto clínico. <strong>No constituyen recomendación diagnóstica</strong> ni sustituyen el
+        juicio profesional. La selección del instrumento debe considerar la población y el contexto de aplicación.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+     TAB 3: FUNDAMENTOS
+══════════════════════════════════════════ -->
+  <div id="tab-theory" class="page" role="tabpanel" aria-labelledby="tabTheory">
+    <p class="stitle">Fundamentos Bayesianos <small>Marco teórico para la interpretación diagnóstica</small></p>
+    <div class="layout-2">
+      <div class="col">
+        <div class="card">
+          <div class="card-head"><span class="pip" style="background:var(--cobalt)"></span>El Teorema de Bayes Aplicado
+            al Diagnóstico</div>
+          <div class="iblock">
+            <div class="iblock-title">Formulación general</div>
+            <p>El teorema de Bayes establece que la probabilidad de que un paciente tenga la condición E dado un
+              resultado positivo (+) en el test T es:</p>
+          </div>
+          <div class="formula-strip" style="flex-direction:column;align-items:flex-start;gap:8px;margin:14px 0">
+            <span class="fml">P(E | T+) = P(T+ | E) · P(E) / P(T+)</span>
+            <span class="fml"> = Sensibilidad · Prevalencia / P(T+)</span>
+            <span class="fml">P(T+) = Sens·Prev + (1−Espec)·(1−Prev)</span>
+          </div>
+          <div class="iblock">
+            <p>Donde <strong>P(E | T+)</strong> es el <strong>Valor Predictivo Positivo (VPP)</strong>.
+              Nótese que el VPP depende crucialmente de la prevalencia P(E): el mismo test tendrá VPP muy diferente en
+              contextos con distinta prevalencia.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="pip" style="background:var(--amber)"></span>Razones de Verosimilitud</div>
+          <div style="overflow-x:auto">
+            <table class="rtbl">
+              <thead>
+                <tr>
+                  <th>LR+</th>
+                  <th>LR−</th>
+                  <th>Cambio en probabilidad post-test</th>
+                  <th>Utilidad clínica</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="mono lr-excellent">> 10</td>
+                  <td class="mono lr-excellent">
+                    < 0.1</td>
+                  <td>Cambio diagnóstico grande (> 45%)</td>
+                  <td>Muy alto valor diagnóstico</td>
+                </tr>
+                <tr>
+                  <td class="mono lr-good">5–10</td>
+                  <td class="mono lr-good">0.1–0.2</td>
+                  <td>Cambio moderado-grande (15–45%)</td>
+                  <td>Alto valor diagnóstico</td>
+                </tr>
+                <tr>
+                  <td class="mono lr-moderate">2–5</td>
+                  <td class="mono lr-moderate">0.2–0.5</td>
+                  <td>Cambio pequeño-moderado (< 15%)</td>
+                  <td>Valor limitado</td>
+                </tr>
+                <tr>
+                  <td class="mono lr-poor">1–2</td>
+                  <td class="mono lr-poor">0.5–1.0</td>
+                  <td>Cambio despreciable</td>
+                  <td>Sin valor diagnóstico</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p style="font-size:11px;color:var(--t3);margin-top:10px;font-style:italic">
+            Referencia: Jaeschke et al. (1994) — Users' Guide to the Medical Literature. JAMA.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="pip" style="background:var(--violet)"></span>Actualización de Odds</div>
+          <div class="iblock">
+            <p>El enfoque de odds permite encadenar múltiples evidencias (tests secuenciales):</p>
+          </div>
+          <div class="formula-strip" style="flex-direction:column;align-items:flex-start;gap:8px;margin:14px 0">
+            <span class="fml">Odds previas = P(E) / (1 − P(E))</span>
+            <span class="fml">Odds posteriores = Odds previas × LR+</span>
+            <span class="fml">P(E | T+) = Odds posteriores / (1 + Odds posteriores)</span>
+          </div>
+          <div class="iblock">
+            <p>Si un segundo test independiente es aplicado, las odds posteriores del primer test se convierten en las
+              odds previas del segundo: esto es el <strong>encadenamiento bayesiano</strong>.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="card">
+          <div class="card-head"><span class="pip" style="background:var(--green)"></span>Paradoja de la Prevalencia —
+            Simulación Interactiva</div>
+          <div class="ctrl">
+            <label for="th-sens">Fija Sensibilidad <span class="cv" id="cv-th-sens">0.85</span></label>
+            <input type="range" id="th-sens" min="0.5" max="0.99" step="0.01" value="0.85"
+              oninput="syncSl('th-sens','cv-th-sens',2);drawParadox()">
+          </div>
+          <div class="ctrl">
+            <label for="th-espec">Fija Especificidad <span class="cv" id="cv-th-espec">0.85</span></label>
+            <input type="range" id="th-espec" min="0.5" max="0.99" step="0.01" value="0.85"
+              oninput="syncSl('th-espec','cv-th-espec',2);drawParadox()">
+          </div>
+          <div class="chart-wrap tall"><canvas id="c-paradox"></canvas></div>
+          <p style="font-size:11px;color:var(--t3);margin-top:8px;font-style:italic">
+            Observa cómo el VPP colapsa dramáticamente cuando la prevalencia baja por debajo del 10%,
+            incluso con Sensibilidad y Especificidad del 85%. Este es el efecto de la prevalencia sobre el valor
+            diagnóstico.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="pip" style="background:var(--cobalt)"></span>Contextos Clínicos y
+            Prevalencia Esperada</div>
+          <table class="rtbl">
+            <thead>
+              <tr>
+                <th>Contexto</th>
+                <th>Trastorno</th>
+                <th>Prevalencia Est.</th>
+                <th>Implicación para VPP</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Atención Primaria</td>
+                <td>Depresión Mayor</td>
+                <td class="mono">10–15%</td>
+                <td><span class="chip chip-warn">VPP moderado</span></td>
+              </tr>
+              <tr>
+                <td>Consulta Psiquiátrica</td>
+                <td>Depresión Mayor</td>
+                <td class="mono">30–50%</td>
+                <td><span class="chip chip-ok">VPP elevado</span></td>
+              </tr>
+              <tr>
+                <td>Población General</td>
+                <td>Depresión Mayor</td>
+                <td class="mono">5–8%</td>
+                <td><span class="chip chip-bad">VPP bajo</span></td>
+              </tr>
+              <tr>
+                <td>Hospital Oncológico</td>
+                <td>Depresión</td>
+                <td class="mono">25–40%</td>
+                <td><span class="chip chip-ok">VPP elevado</span></td>
+              </tr>
+              <tr>
+                <td>Screening Escolar</td>
+                <td>TDAH</td>
+                <td class="mono">5–10%</td>
+                <td><span class="chip chip-warn">VPP moderado–bajo</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="font-size:11px;color:var(--t3);margin-top:10px;font-style:italic">
+            Prevalencias de referencia: GBD 2019 (Lancet Psychiatry, 2022); APA (DSM-5-TR, 2022).
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer (C-07) -->
+  <footer
+    style="text-align:center;padding:30px 0 20px;color:var(--t3);font-size:12px;border-top:1px solid var(--border);margin:20px 44px 0">
+    Bayes Toolbox v1.0 · Método: Teorema de Bayes, Razones de Verosimilitud (LR+/LR−) y Actualización de Odds ·
+    Psicología Clínica
+  </footer>
+
+  <!-- ══════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════ -->
+  <script>
+/* ═══ NÚCLEO VALIDADO · v3.1 · incrustado en cada HTML autónomo ═══ */
+function escapeHTML(value) { return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function requireProbabilityVector(values, n, title='Distribución', tolerance=0.001) {
+  if(!Array.isArray(values)||values.length!==n||values.some(v=>!Number.isFinite(v)||v<0||v>1)) throw new Error(title+': ingrese '+n+' probabilidades finitas entre 0 y 1.');
+  const sum=values.reduce((a,b)=>a+b,0);
+  if(Math.abs(sum-1)>tolerance) throw new Error(title+': la suma debe ser 1; suma actual '+sum.toFixed(6)+'.');
+  return values.map(v=>v/sum);
+}
+function requireStochastic(P) {
+  if(!Array.isArray(P)||!P.length) throw new Error('La matriz está vacía.');
+  return P.map((row,i)=>requireProbabilityVector(row,P.length,'Fila '+(i+1)));
+}
+function solveLinear(A,b) {
+  const n=A.length, M=A.map((r,i)=>[...r,b[i]]);
+  for(let c=0;c<n;c++) {
+    let pivot=c; for(let i=c+1;i<n;i++) if(Math.abs(M[i][c])>Math.abs(M[pivot][c])) pivot=i;
+    if(Math.abs(M[pivot][c])<1e-12) return null;
+    [M[c],M[pivot]]=[M[pivot],M[c]];
+    const scale=M[c][c]; for(let j=c;j<=n;j++) M[c][j]/=scale;
+    for(let i=0;i<n;i++) if(i!==c) {const f=M[i][c];for(let j=c;j<=n;j++)M[i][j]-=f*M[c][j];}
+  }
+  return M.map(r=>r[n]);
+}
+function markovStructure(P) {
+  const n=P.length, reach=P.map((r,i)=>r.map((v,j)=>v>0||i===j));
+  for(let k=0;k<n;k++)for(let i=0;i<n;i++)for(let j=0;j<n;j++)reach[i][j]=reach[i][j]||(reach[i][k]&&reach[k][j]);
+  const seen=new Set(), classes=[];
+  for(let i=0;i<n;i++) if(!seen.has(i)) {const cls=[];for(let j=0;j<n;j++)if(reach[i][j]&&reach[j][i]){cls.push(j);seen.add(j);}classes.push(cls);}
+  const closed=classes.filter(cls=>cls.every(i=>P[i].every((v,j)=>v===0||cls.includes(j))));
+  const gcd=(a,b)=>b?gcd(b,a%b):Math.abs(a);
+  const periods=closed.map(cls=>{const d=Array(n).fill(null),queue=[cls[0]];d[cls[0]]=0;for(let q=0;q<queue.length;q++)for(const j of cls)if(P[queue[q]][j]>0&&d[j]===null){d[j]=d[queue[q]]+1;queue.push(j);}let g=0;for(const i of cls)for(const j of cls)if(P[i][j]>0)g=gcd(g,d[i]+1-d[j]);return g||1;});
+  return {reach,closed,periods,unique:closed.length===1,periodic:periods.some(p=>p>1)};
+}
+function stationaryDistribution(P,initial=null) {
+  P=requireStochastic(P);const n=P.length, init=initial?requireProbabilityVector(initial,n):Array(n).fill(1/n);
+  const info=markovStructure(P), closedSet=new Set(info.closed.flat()), trans=Array.from({length:n},(_,i)=>i).filter(i=>!closedSet.has(i));
+  const out=Array(n).fill(0);
+  for(const cls of info.closed) {
+    const size=cls.length, A=cls.map((j,r)=>cls.map((i,c)=>P[i][j]-(r===c?1:0))), b=Array(size).fill(0);
+    A[size-1]=Array(size).fill(1);b[size-1]=1;const local=solveLinear(A,b);
+    if(!local) throw new Error('No se pudo resolver la distribución estacionaria.');
+    let weight=cls.reduce((s,i)=>s+init[i],0);
+    if(trans.length){const M=trans.map((i,r)=>trans.map((j,c)=>(r===c?1:0)-P[i][j])), R=trans.map(i=>cls.reduce((s,j)=>s+P[i][j],0));const h=solveLinear(M,R);if(!h)throw new Error('No se pudo resolver la absorción entre clases.');weight+=trans.reduce((s,i,r)=>s+init[i]*h[r],0);}
+    cls.forEach((i,r)=>out[i]=Math.max(0,local[r])*weight);
+  }
+  const residual=out.reduce((s,v,j)=>s+Math.abs(v-out.reduce((a,x,i)=>a+x*P[i][j],0)),0);
+  if(!out.every(Number.isFinite)||residual>1e-8)throw new Error('Distribución estacionaria con residuo excesivo.');
+  out.details={...info,residual};return out;
+}
+function meanFirstPassage(P,target) {
+  P=requireStochastic(P);const n=P.length;
+  if(!Number.isInteger(target)||target<0||target>=n)throw new Error('Estado objetivo inválido.');
+  // La meta se detiene al primer arribo: no explorar sus salidas.
+  const stopped=P.map((r,i)=>i===target?r.map((_,j)=>j===target?1:0):r.slice());
+  const info=markovStructure(stopped), bad=info.closed.filter(c=>!c.includes(target)).flat();
+  const finite=Array.from({length:n},(_,i)=>i).filter(i=>i!==target&&!bad.some(j=>info.reach[i][j]));
+  const M=finite.map((i,r)=>finite.map((j,c)=>(r===c?1:0)-P[i][j]));
+  const times=finite.length?solveLinear(M,Array(finite.length).fill(1)):[];
+  if(!times)throw new Error('No se pudo resolver el tiempo de llegada.');
+  return Array.from({length:n},(_,i)=>i).filter(i=>i!==target).map(i=>finite.includes(i)?times[finite.indexOf(i)]:Infinity);
+}
+function strictObservations(text,continuous=false,nStates=null,line=1) {
+  const raw=String(text).trim();if(!raw)throw new Error('Línea '+line+': faltan observaciones.');
+  const tokens=raw.includes(',')||raw.includes(';')?raw.split(/[,;]/):raw.split(/\s+/);
+  return tokens.map((token,i)=>{const clean=token.trim();if(!clean)throw new Error('Línea '+line+', observación '+(i+1)+': dato ausente.');const v=Number(clean);if(!Number.isFinite(v)||(!continuous&&!Number.isInteger(v))||(!continuous&&(v<0||(nStates!==null&&v>=nStates))))throw new Error('Línea '+line+', observación '+(i+1)+': valor inválido «'+clean+'». No se eliminarán observaciones ni se comprimirá el tiempo.');return v;});
+}
+function parseNamedSubjects(text,continuous=false,nStates=null) {
+  return String(text).split('\n').flatMap((line,index)=>{line=line.trim();if(!line||line.startsWith('#'))return [];const colon=line.indexOf(':');return [{name:colon>=0?line.slice(0,colon).trim():'Sujeto '+(index+1),obs:strictObservations(colon>=0?line.slice(colon+1):line,continuous,nStates,index+1)}];});
+}
+function strictStateLabels(text,names,n,line=1){const tokens=String(text).includes(',')||String(text).includes(';')?String(text).split(/[,;]/):String(text).trim().split(/\s+/);return tokens.map((token,i)=>{const value=token.trim(),index=names.findIndex(s=>s.toLowerCase()===value.toLowerCase());if(index>=0&&index<n)return index;return strictObservations(value,false,n,line)[0];});}
+function validateCTMCRecords(lines,nStates,baseStates){lines.forEach((line,index)=>{const row=strictObservations(line,true,null,index+1);if(row.length!==3||!Number.isInteger(row[0])||!Number.isInteger(row[1])||row[0]<0||row[1]<0||row[0]>=nStates||row[1]>=nStates||row[0]===row[1]||row[0]>=baseStates||row[2]<=0)throw new Error('Registro CTMC inválido en línea '+(index+1)+': se requieren origen, destino y duración positiva; el origen no puede ser absorbente.');});}
+function isStableAR(phi,margin=1e-6) {
+  if(phi.some(v=>!Number.isFinite(v)))return false;
+  let work=phi.slice();for(let p=work.length;p>0;p--){const k=work[p-1];if(Math.abs(k)>=1-margin)return false;const prev=[];for(let i=0;i<p-1;i++)prev.push((work[i]+k*work[p-2-i])/(1-k*k));work=prev;}return true;
+}
+function stableARCoefficients(phi) {
+  if(isStableAR(phi,0.001))return phi.slice();
+  let factor=1;for(let i=0;i<300;i++){factor*=0.97;const candidate=phi.map(v=>v*factor);if(isStableAR(candidate,0.001))return candidate;}
+  throw new Error('No se pudo estabilizar el modelo AR.');
+}
+function constrainedWLS(y,X,w,inverse,ridge=1e-6) {
+  if(!y.length||!X.length)return {beta:[],varc:1,se:[]};
+  const n=X[0].length, M=Array.from({length:n},()=>Array(n).fill(0)),b=Array(n).fill(0);let sw=0;
+  y.forEach((v,i)=>{if(!Number.isFinite(v)||!Number.isFinite(w[i])||w[i]<0||X[i].some(x=>!Number.isFinite(x)))throw new Error('Datos no finitos en regresión.');sw+=w[i];for(let j=0;j<n;j++){b[j]+=w[i]*X[i][j]*v;for(let k=0;k<n;k++)M[j][k]+=w[i]*X[i][j]*X[i][k];}});
+  if(sw<1e-10)return {beta:Array(n).fill(0),varc:1,se:Array(n).fill(0)};
+  M.forEach((r,i)=>r[i]+=ridge);let beta=solveLinear(M,b);if(!beta)throw new Error('Regresión singular.');
+  const original=beta.slice(),phi=stableARCoefficients(beta.slice(1));beta=[beta[0],...phi];
+  beta[0]=y.reduce((s,v,i)=>s+w[i]*(v-phi.reduce((a,p,j)=>a+p*X[i][j+1],0)),0)/sw;
+  const err=y.reduce((s,v,i)=>s+w[i]*(v-X[i].reduce((a,x,j)=>a+x*beta[j],0))**2,0),varc=Math.max(1e-4,err/sw),inv=inverse(M);
+  return {beta,varc,se:inv?inv.map((r,j)=>Math.sqrt(Math.max(0,varc*r[j]))):Array(n).fill(0),constrained:original.some((v,i)=>Math.abs(v-beta[i])>1e-6)};
+}
+let auditSeedState=42;
+function setSimulationSeed(seed) {if(!Number.isInteger(seed)||seed<0||seed>4294967295)throw new Error('La semilla debe ser un entero entre 0 y 4294967295.');auditSeedState=seed>>>0;}
+function auditRandom(){auditSeedState=(auditSeedState+0x6D2B79F5)>>>0;let t=auditSeedState;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;}
+function gammaLog(z){const co=[676.5203681218851,-1259.1392167224028,771.3234287776531,-176.6150291621406,12.507343278686905,-.1385710952657201,9.984369578019572e-6,1.505632735149312e-7];if(z<.5)return Math.log(Math.PI)-Math.log(Math.sin(Math.PI*z))-gammaLog(1-z);z--;let x=.9999999999998099;co.forEach((v,i)=>x+=v/(z+i+1));const t=z+7.5;return .5*Math.log(2*Math.PI)+(z+.5)*Math.log(t)-t+Math.log(x);}
+function chiSquareSurvival(x,df){if(x===Infinity)return 0;if(!Number.isFinite(x)||x<0||df<=0)return null;if(x===0)return 1;const a=df/2,z=x/2,scale=Math.exp(-z+a*Math.log(z)-gammaLog(a));if(z<a+1){let sum=1/a,term=sum;for(let k=1;k<10000;k++){term*=z/(a+k);sum+=term;if(Math.abs(term)<Math.abs(sum)*1e-14)break;}return Math.max(0,Math.min(1,1-scale*sum));}let b=z+1-a,c=1e300,d=1/b,h=d;for(let i=1;i<10000;i++){const an=-i*(i-a);b+=2;d=an*d+b;if(Math.abs(d)<1e-300)d=1e-300;c=b+an/c;if(Math.abs(c)<1e-300)c=1e-300;d=1/d;const delta=d*c;h*=delta;if(Math.abs(delta-1)<1e-14)break;}return Math.max(0,Math.min(1,scale*h));}
+function groupedChiSquare(obs,expected,estimatedParams=0){if(obs.length!==expected.length||obs.some(v=>!Number.isFinite(v)||v<0)||expected.some(v=>!Number.isFinite(v)||v<0))throw new Error('Conteos inválidos para χ².');let groups=[],o=0,e=0;obs.forEach((v,i)=>{if(expected[i]===0&&v>0){groups.push([v,0]);return;}o+=v;e+=expected[i];if(e>=5){groups.push([o,e]);o=0;e=0;}});if(e>0||o>0){if(groups.length){groups.at(-1)[0]+=o;groups.at(-1)[1]+=e;}else groups.push([o,e]);}const df=groups.length-1-estimatedParams;const stat=groups.reduce((s,[a,b])=>s+(b===0?(a>0?Infinity:0):(a-b)**2/b),0);return {stat,df:Math.max(0,df),pv:df>0&&groups.every(g=>g[1]>=5)?chiSquareSurvival(stat,df):null,groups};}
+function downloadAuditText(filename,text){const blob=new Blob([text],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function reportUserError(error){const el=document.getElementById('audit-status');if(el){el.textContent=error.message||String(error);el.setAttribute('role','alert');}else alert(error.message||String(error));}
+function updateAccessibleCharts(){if(!window.Chart?.getChart)return;for(const canvas of document.querySelectorAll('canvas')){const chart=Chart.getChart(canvas);if(!chart?.data)continue;let details=document.getElementById('audit-table-'+canvas.id);if(!details){details=document.createElement('details');details.id='audit-table-'+canvas.id;details.className='audit-chart-table';canvas.insertAdjacentElement('afterend',details);}const labels=chart.data.labels||[],datasets=chart.data.datasets||[],n=Math.max(labels.length,...datasets.map(d=>d.data?.length||0));details.innerHTML='<summary>Consultar datos del gráfico en tabla</summary><div style="overflow:auto"><table><thead><tr><th scope="col">Observación</th>'+datasets.map(d=>'<th scope="col">'+escapeHTML(d.label||'Serie')+'</th>').join('')+'</tr></thead><tbody>'+Array.from({length:n},(_,i)=>'<tr><th scope="row">'+escapeHTML(labels[i]??i)+'</th>'+datasets.map(d=>{const v=d.data?.[i],text=v&&typeof v==='object'?Object.entries(v).map(([k,x])=>k+': '+x).join(', '):v??'—';return '<td>'+escapeHTML(text)+'</td>';}).join('')+'</tr>').join('')+'</tbody></table></div>';}}
+function runComputeWorker(entry,job,functions){return new Promise((resolve,reject)=>{const code='let auditSeedState=42;\n'+functions.map(f=>f.toString()).join('\n')+'\nonmessage=e=>{try{postMessage({result:'+entry+'(e.data,p=>postMessage({progress:p}))});}catch(e){postMessage({error:e.message});}}',url=URL.createObjectURL(new Blob([code],{type:'text/javascript'})),worker=new Worker(url),button=document.createElement('button');button.textContent='Cancelar cálculo';button.type='button';document.querySelector('.audit-controls').appendChild(button);const clean=()=>{worker.terminate();URL.revokeObjectURL(url);button.remove();};button.onclick=()=>{clean();reject(new Error('Cálculo cancelado.'));};worker.onmessage=e=>{if(e.data.progress!==undefined)document.getElementById('audit-status').textContent='Ajuste: '+Math.round(e.data.progress*100)+'%';if(e.data.error){clean();reject(new Error(e.data.error));}if(e.data.result){clean();resolve(e.data.result);}};worker.onerror=e=>{clean();reject(new Error(e.message||'Error al calcular.'));};worker.postMessage(job);});}
+function initializeAuditUI(runNames=[]) {
+  const controls=document.createElement('section');controls.className='audit-controls';controls.setAttribute('aria-label','Reproducibilidad y exportación');
+  controls.innerHTML='<label for="audit-seed">Semilla de simulación</label><input id="audit-seed" type="number" min="0" max="4294967295" step="1" value="42"><button type="button" id="audit-export">Descargar resultados y configuración</button><p id="audit-status" role="status" aria-live="polite">Versión 3.1 · Los resultados son probabilísticos y educativos; no constituyen diagnóstico ni reemplazan el juicio profesional.</p>';
+  const header=document.querySelector('header');(header||document.body).insertAdjacentElement(header?'afterend':'afterbegin',controls);
+  document.getElementById('audit-export').onclick=()=>{const inputs=Array.from(document.querySelectorAll('input,select,textarea')).map(e=>(e.getAttribute('aria-label')||e.id||e.name||e.type)+': '+e.value).join('\n');const text=document.body.innerText||document.body.textContent;downloadAuditText(document.title.replace(/[^\p{L}\p{N}_-]/gu,'_')+'.txt','Versión 3.1\n'+inputs+'\n\n'+text);};
+  for(const name of runNames){const original=window[name];if(typeof original!=='function')continue;window[name]=function(...args){try{setSimulationSeed(Number(document.getElementById('audit-seed').value));for(const e of document.querySelectorAll('input[type="number"],input[type="range"]'))if(!e.disabled&&e.offsetParent!==null&&(!e.value.trim()||!Number.isFinite(Number(e.value))||(e.min!==''&&Number(e.value)<Number(e.min))||(e.max!==''&&Number(e.value)>Number(e.max))))throw new Error('Revise el campo '+(e.getAttribute('aria-label')||e.id)+': el valor está fuera de su rango.');const result=original.apply(this,args);if(result&&typeof result.catch==='function')return result.then(value=>{updateAccessibleCharts();return value;}).catch(reportUserError);updateAccessibleCharts();return result;}catch(e){reportUserError(e);}};}
+  const labelFields=()=>{for(const e of document.querySelectorAll('input,select,textarea')){if(e.getAttribute('aria-label')||e.labels?.length)continue;const match=(e.id||'').match(/^(.+?)[_-](\d+)[_-](\d+)$/);e.setAttribute('aria-label',match?match[1]+': origen '+(Number(match[2])+1)+', destino '+(Number(match[3])+1):e.placeholder||e.previousElementSibling?.textContent?.trim()||e.id||'Valor configurable');}};
+  labelFields();new MutationObserver(labelFields).observe(document.body,{childList:true,subtree:true});
+  for(const chartClass of ['Chart']){const C=window[chartClass];if(C?.defaults){C.defaults.interaction.mode='index';C.defaults.interaction.intersect=false;C.defaults.plugins.tooltip.callbacks.label=ctx=>' '+ctx.dataset.label+': '+Number(ctx.parsed.y??ctx.parsed).toFixed(4);}}
+}
+
+
+    'use strict';
+    const $ = id => document.getElementById(id);
+
+    /* ══ Constantes (C-04) ════════════════════════════ */
+    const PRESETS = {
+      depresion: { label: '🏥 Depresión Mayor', prev: 0.20, sens: 0.88, espec: 0.85 },
+      ansiedad: { label: '💡 Ansiedad Generalizada', prev: 0.12, sens: 0.82, espec: 0.78 },
+      tdah: { label: '🎯 TDAH Infantil', prev: 0.08, sens: 0.77, espec: 0.72 }
+    };
+
+    /* ── Helpers ────────────────────────────────────────── */
+    function syncSl(rid, cid, dec) { $(cid).textContent = (+$(rid).value).toFixed(dec); }
+    function fmt(v,d=2){return Number.isNaN(+v)?'No definido':+v===Infinity?'∞':(+v).toFixed(d);}
+    function pct(v) { return fmt(v * 100, 1) + '%'; }
+
+    /** Cargar un preset clínico (I-01) */
+    function loadPreset(name) {
+      const p = PRESETS[name];
+      if (!p) return;
+      $('sl-prev').value = p.prev; syncSl('sl-prev', 'cv-prev', 2);
+      $('sl-sens').value = p.sens; syncSl('sl-sens', 'cv-sens', 2);
+      $('sl-espec').value = p.espec; syncSl('sl-espec', 'cv-espec', 2);
+      computeSingle();
+    }
+
+    /** Exportar resumen al portapapeles (I-06) */
+    function exportSingleResults() {
+      const prev = +$('sl-prev').value, sens = +$('sl-sens').value, espec = +$('sl-espec').value;
+      const vpp = calcVPP(sens, espec, prev), vpn = calcVPN(sens, espec, prev);
+      const lrp = calcLRp(sens, espec), lrm = calcLRm(sens, espec);
+      let txt = '═══ BAYES TOOLBOX — RESUMEN ═══\n';
+      txt += `Prevalencia: ${pct(prev)}\n`;
+      txt += `Sensibilidad: ${pct(sens)}\nEspecificidad: ${pct(espec)}\n\n`;
+      txt += `VPP: ${pct(vpp)}\nVPN: ${pct(vpn)}\n`;
+      txt += `LR+: ${fmt(lrp, 2)}\nLR−: ${fmt(lrm, 3)}\n\n`;
+      txt += '⚠️ Aviso: Resultados probabilísticos. No constituyen diagnóstico clínico.\n';
+      navigator.clipboard.writeText(txt).then(() => alert('✅ Resumen copiado al portapapeles.'));
+    }
+
+    /* ── Bayes calculations ─────────────────────────────── */
+    function calcVPP(sens, espec, prev) {
+      return (sens * prev) / (sens * prev + (1 - espec) * (1 - prev));
+    }
+    function calcVPN(sens, espec, prev) {
+      return (espec * (1 - prev)) / (espec * (1 - prev) + (1 - sens) * prev);
+    }
+    function calcLRp(sens, espec) { return sens / (1 - espec); }
+    function calcLRm(sens, espec) { return (1 - sens) / espec; }
+    function calcOdds(prev) { return prev / (1 - prev); }
+
+    /* ── Colour classifiers ─────────────────────────────── */
+    function pctClass(v) {
+      if (v >= 0.80) return 'pct-excellent';
+      if (v >= 0.65) return 'pct-good';
+      if (v >= 0.50) return 'pct-moderate';
+      return 'pct-poor';
+    }
+    function lrpClass(v) {
+      if (v >= 10) return 'lr-excellent';
+      if (v >= 5) return 'lr-good';
+      if (v >= 2) return 'lr-moderate';
+      return 'lr-poor';
+    }
+    function lrmClass(v) {
+      if (v <= 0.1) return 'lr-excellent';
+      if (v <= 0.2) return 'lr-good';
+      if (v <= 0.5) return 'lr-moderate';
+      return 'lr-poor';
+    }
+    function hv(val, cls = 'hval-blue') { return `<span class="hval ${cls}">${val}</span>`; }
+
+    /* ── Tab switching ──────────────────────────────────── */
+    function showTab(id, btn) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+      $('tab-' + id).classList.add('active');
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      if (id === 'theory') drawParadox();
+    }
+
+    /* ── Chart registry ─────────────────────────────────── */
+    const CH = {};
+    function mkChart(id, cfg) {
+      if (CH[id]) { CH[id].destroy(); delete CH[id]; }
+      CH[id] = new Chart($(id).getContext('2d'), cfg);
+      return CH[id];
+    }
+
+    /* ── Light chart defaults ───────────────────────────── */
+    const LDC = {
+      color: '#526277',
+      plugins: {
+        legend: { labels: { color: '#475569', font: { family: 'IBM Plex Sans', size: 11 } } },
+        tooltip: {
+          mode: 'index', intersect: false,
+          backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1,
+          titleColor: '#f8fafc', bodyColor: '#526277',
+          titleFont: { family: 'IBM Plex Mono' }, bodyFont: { family: 'IBM Plex Mono', size: 11 }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#526277', font: { family: 'IBM Plex Mono', size: 10 } }, grid: { color: 'rgba(203,213,225,.5)' } },
+        y: { ticks: { color: '#526277', font: { family: 'IBM Plex Mono', size: 10 } }, grid: { color: 'rgba(203,213,225,.5)' } }
+      }
+    };
+    function ldc(extra = {}) {
+      function dm(a, b) { const o = { ...a }; for (const k in b) { if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k])) o[k] = dm(a[k] || {}, b[k]); else o[k] = b[k]; } return o; }
+      return dm(LDC, extra);
+    }
+
+    /* ══════════════════════════════════════════
+       TAB 1: SINGLE TEST
+    ══════════════════════════════════════════ */
+    function computeSingle() {
+      const prev = +$('sl-prev').value;
+      const sens = +$('sl-sens').value;
+      const espec = +$('sl-espec').value;
+
+      const vpp = calcVPP(sens, espec, prev);
+      const vpn = calcVPN(sens, espec, prev);
+      const lrp = calcLRp(sens, espec);
+      const lrm = calcLRm(sens, espec);
+      const oddsP = calcOdds(prev);
+      const oddsPost = oddsP * lrp;
+
+      // KPIs
+      $('kpi-vpp').textContent = pct(vpp);
+      $('kpi-vpn').textContent = pct(vpn);
+      $('kpi-lrp').textContent = fmt(lrp, 2);
+      $('kpi-lrm').textContent = fmt(lrm, 3);
+      $('odds-pre').textContent = fmt(oddsP, 3);
+      $('odds-post').textContent = fmt(oddsPost, 3);
+
+      // Needle
+      const needlePct = Math.min(95, Math.max(5, vpp * 100));
+      $('odds-needle').style.left = needlePct + '%';
+
+      // Curves chart
+      const prevArr = Array.from({ length: 50 }, (_, i) => (i + 1) / 100);
+      const vppCurve = prevArr.map(p => calcVPP(sens, espec, p) * 100);
+      const vpnCurve = prevArr.map(p => calcVPN(sens, espec, p) * 100);
+
+      mkChart('c-single-curves', {
+        type: 'line',
+        data: {
+          labels: prevArr.map(p => fmt(p * 100, 0) + '%'),
+          datasets: [
+            {
+              label: 'VPP', data: vppCurve, borderColor: '#1a56db', backgroundColor: 'rgba(26,86,219,.08)',
+              fill: true, tension: .4, pointRadius: 0, borderWidth: 2.5
+            },
+            {
+              label: 'VPN', data: vpnCurve, borderColor: '#059669', backgroundColor: 'rgba(5,150,105,.06)',
+              fill: true, tension: .4, pointRadius: 0, borderWidth: 2.5
+            },
+            {
+              label: 'Prevalencia actual', data: prevArr.map(p => Math.abs(p - prev) < 0.015 ? vppCurve[Math.round(p * 100) - 1] : null),
+              borderColor: '#d97706', pointBackgroundColor: '#d97706', pointRadius: prevArr.map(p => Math.abs(p - prev) < 0.015 ? 7 : 0),
+              showLine: false, pointStyle: 'triangle'
+            }
+          ]
+        },
+        options: ldc({
+          scales: {
+            x: { ...LDC.scales.x, title: { display: true, text: 'Prevalencia', color: '#526277' } },
+            y: { ...LDC.scales.y, min: 0, max: 100, title: { display: true, text: 'Valor Predictivo (%)', color: '#526277' } }
+          },
+          plugins: {
+            ...LDC.plugins,
+            annotation: undefined,
+            tooltip: {
+              ...LDC.plugins.tooltip,
+              callbacks: {
+                label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y, 1)}%`
+              }
+            }
+          }
+        })
+      });
+
+      // Post-test probability bar chart
+      const prevPoints = [0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50];
+      const vppPts = prevPoints.map(p => calcVPP(sens, espec, p) * 100);
+      const vpnPts = prevPoints.map(p => calcVPN(sens, espec, p) * 100);
+      mkChart('c-single-post', {
+        type: 'bar',
+        data: {
+          labels: prevPoints.map(p => (p * 100) + '%'),
+          datasets: [
+            { label: 'VPP', data: vppPts, backgroundColor: 'rgba(26,86,219,.7)', borderColor: '#1a56db', borderWidth: 1, borderRadius: 4 },
+            { label: 'VPN', data: vpnPts, backgroundColor: 'rgba(5,150,105,.6)', borderColor: '#059669', borderWidth: 1, borderRadius: 4 }
+          ]
+        },
+        options: ldc({
+          scales: {
+            x: { ...LDC.scales.x, title: { display: true, text: 'Prevalencia', color: '#526277' } },
+            y: { ...LDC.scales.y, min: 0, max: 100, title: { display: true, text: '%', color: '#526277' } }
+          }
+        })
+      });
+
+      // Interpretation
+      fillSingleInterp(prev, sens, espec, vpp, vpn, lrp, lrm, oddsP, oddsPost);
+    }
+
+    function fillSingleInterp(prev, sens, espec, vpp, vpn, lrp, lrm, oddsP, oddsPost) {
+      const lrpLabel = lrp >= 10 ? 'excelente (≥10)' : lrp >= 5 ? 'buena (5–10)' : lrp >= 2 ? 'moderada (2–5)' : 'pobre (1–2)';
+      const lrmLabel = lrm <= 0.1 ? 'excelente (≤0.1)' : lrm <= 0.2 ? 'buena (0.1–0.2)' : lrm <= 0.5 ? 'moderada (0.2–0.5)' : 'pobre (>0.5)';
+      const vppLabel = vpp >= 0.80 ? 'elevado — alta confianza diagnóstica' : vpp >= 0.65 ? 'aceptable — confirmar con evaluación clínica' : vpp >= 0.50 ? 'moderado — necesita apoyo adicional' : 'bajo — resultado positivo no es diagnóstico';
+      const vpnLabel = vpn >= 0.95 ? 'muy alto — descarte casi definitivo' : vpn >= 0.85 ? 'alto — buena capacidad de exclusión' : 'moderado — el resultado negativo no descarta';
+      const prevContext = prev <= 0.05 ? 'población general (baja prevalencia)' : prev <= 0.15 ? 'atención primaria' : prev <= 0.30 ? 'consulta especializada' : prev <= 0.50 ? 'consulta psiquiátrica / alta derivación' : 'entorno de alta prevalencia';
+
+      $('ibox-single').innerHTML = `
+    <div class="ibox-head"><span class="iicon">🔬</span>Interpretación del Test<span class="itag">Análisis Bayesiano</span></div>
+
+    <div class="iblock">
+      <div class="iblock-title">VPP — ¿Qué significa un resultado positivo?</div>
+      <p>Con una prevalencia de ${hv(pct(prev), 'hval-blue')} (contexto: <em>${prevContext}</em>), si este test arroja un resultado <strong>positivo</strong>, 
+      la probabilidad real de que el paciente tenga la condición es ${hv(pct(vpp), vpp >= 0.80 ? 'hval-green' : vpp >= 0.65 ? 'hval-blue' : vpp >= 0.50 ? 'hval-amber' : 'hval-red')}. 
+      Este VPP es <strong>${vppLabel}</strong>. 
+      ${vpp < 0.50 ? `<strong>Advertencia:</strong> en este contexto de prevalencia, la mayoría de resultados positivos serán <em>falsos positivos</em>. 
+      El test positivo debe complementarse con evaluación clínica exhaustiva antes de cualquier diagnóstico.`:
+          vpp >= 0.80 ? `El resultado positivo tiene alto valor confirmatorio. Sin embargo, siempre debe integrarse con la presentación clínica del paciente.` :
+            `Se recomienda confirmación clínica adicional antes de establecer el diagnóstico.`}</p>
+    </div>
+    <div class="idivider"></div>
+
+    <div class="iblock">
+      <div class="iblock-title">VPN — ¿Qué significa un resultado negativo?</div>
+      <p>Un resultado <strong>negativo</strong> implica que la probabilidad de NO tener la condición es ${hv(pct(vpn), vpn >= 0.90 ? 'hval-green' : 'hval-blue')}. 
+      ${vpn >= 0.95 ? `Este VPN muy elevado indica que el test tiene <strong>alta capacidad de exclusión diagnóstica</strong>: un resultado negativo prácticamente descarta la condición en este contexto de prevalencia. 
+      Útil como <em>screening</em> para descartar, no para confirmar.`:
+          vpn >= 0.85 ? `Buen poder de descarte, aunque un ${pct(1 - vpn)} de pacientes con resultado negativo podría tener la condición (falsos negativos).` :
+            `El poder de exclusión es limitado. Un resultado negativo no descarta la condición con suficiente seguridad clínica.`}</p>
+    </div>
+    <div class="idivider"></div>
+
+    <div class="iblock">
+      <div class="iblock-title">LR+ = ${fmt(lrp, 2)} — Capacidad confirmatoria</div>
+      <p>La razón de verosimilitud positiva es ${hv(fmt(lrp, 2), lrp >= 10 ? 'hval-green' : lrp >= 5 ? 'hval-blue' : lrp >= 2 ? 'hval-amber' : 'hval-red')} 
+      (capacidad ${lrpLabel}). 
+      Esto significa que un resultado positivo es <strong>${fmt(lrp, 1)} veces más probable</strong> en un paciente que SÍ tiene la condición que en uno que no la tiene. 
+      ${lrp < 2 ? 'Un LR+ cercano a 1 indica que el resultado positivo aporta muy poca información diagnóstica adicional respecto a la prevalencia base.' :
+          lrp >= 10 ? 'Un LR+ ≥ 10 produce un cambio diagnóstico mayor del 45%, lo que otorga al test un elevado valor confirmatorio independiente del contexto.' : ''}</p>
+    </div>
+    <div class="idivider"></div>
+
+    <div class="iblock">
+      <div class="iblock-title">Actualización de Odds y Razonamiento Bayesiano</div>
+      <p>Las odds previas de enfermedad son ${hv(fmt(oddsP, 3), 'hval-blue')} (1 caso por cada ${fmt(1 / prev - 1, 1)} no casos). 
+      Tras un resultado positivo, las odds se actualizan a ${hv(fmt(oddsPost, 3), 'hval-green')} — equivalente a una probabilidad posterior de ${hv(pct(oddsPost / (1 + oddsPost)), 'hval-green')}. 
+      <strong>Incremento absoluto en probabilidad:</strong> ${hv('+' + pct(vpp - prev), 'hval-amber')} respecto a la prevalencia base. 
+      Este es el "valor añadido" real del test diagnóstico en este contexto de prevalencia.</p>
+    </div>
+  `;
+    }
+
+    /* ══════════════════════════════════════════
+       TAB 2: COMPARATOR
+    ══════════════════════════════════════════ */
+    let tests = [
+      { name: 'PHQ-9', sens: 0.82, espec: 0.83 },
+      { name: 'BDI-II', sens: 0.89, espec: 0.82 },
+      { name: 'CES-D', sens: 0.87, espec: 0.70 }
+    ];
+
+    function renderTestList(){const el=document.getElementById('test-list');el.replaceChildren();tests.forEach((t,i)=>{const row=document.createElement('div');row.className='test-editor-row';const name=document.createElement('input');name.type='text';name.value=t.name;name.setAttribute('aria-label','Nombre del test '+(i+1));name.oninput=()=>tests[i].name=name.value;row.appendChild(name);for(const [key,label] of [['sens','Sensibilidad'],['espec','Especificidad']]){const input=document.createElement('input');input.type='number';input.min='0';input.max='1';input.step='.01';input.value=t[key];input.setAttribute('aria-label',label+' del test '+(i+1));input.oninput=()=>{tests[i][key]=input.value.trim()===''?NaN:Number(input.value);input.setAttribute('aria-invalid',String(!input.checkValidity()||!input.value.trim()));};row.appendChild(input);}const del=document.createElement('button');del.type='button';del.className='del-btn';del.textContent='×';del.setAttribute('aria-label','Eliminar test '+t.name);del.onclick=()=>removeTest(i);row.appendChild(del);el.appendChild(row);});}
+
+    function addTest() {
+      tests.push({ name: `Test ${tests.length + 1}`, sens: 0.80, espec: 0.80 });
+      renderTestList();
+    }
+    function removeTest(i) {
+      if (tests.length <= 1) { alert('Debe haber al menos un test.'); return; }
+      tests.splice(i, 1);
+      renderTestList();
+    }
+
+    function computeCompare() {
+      if(tests.some(t=>!Number.isFinite(t.sens)||!Number.isFinite(t.espec)||t.sens<0||t.sens>1||t.espec<0||t.espec>1))throw new Error('Cada sensibilidad y especificidad debe estar entre 0 y 1.');
+const prev = +$('sl-cprev').value;
+      const palette = ['#1a56db', '#059669', '#d97706', '#7c3aed', '#dc2626', '#0891b2', '#65a30d'];
+      const prevArr = Array.from({ length: 50 }, (_, i) => (i + 1) / 100);
+
+      // Table
+      const bestVPP = Math.max(...tests.map(t => calcVPP(t.sens, t.espec, prev)));
+      const bestLRp = Math.max(...tests.map(t => calcLRp(t.sens, t.espec)));
+
+      $('tbody-compare').innerHTML = tests.map((t, i) => {
+        const vpp = calcVPP(t.sens, t.espec, prev);
+        const vpn = calcVPN(t.sens, t.espec, prev);
+        const lrp = calcLRp(t.sens, t.espec);
+        const lrm = calcLRm(t.sens, t.espec);
+        const rec = lrp >= 10 ? '<span class="chip chip-ok">Confirmar</span>' : lrp >= 5 ? '<span class="chip chip-info">Útil</span>' : lrp >= 2 ? '<span class="chip chip-warn">Apoyo</span>' : '<span class="chip chip-bad">Débil</span>';
+        const isBestVPP = Math.abs(vpp - bestVPP) < 0.001;
+        return `<tr ${isBestVPP ? 'style="background:var(--cobalt-l)"' : ''}>
+      <td class="test-name" style="color:${palette[i % palette.length]}">${escapeHTML(t.name)}</td>
+      <td class="mono">${pct(t.sens)}</td>
+      <td class="mono">${pct(t.espec)}</td>
+      <td class="mono ${lrpClass(lrp)}">${fmt(lrp, 2)}</td>
+      <td class="mono ${lrmClass(lrm)}">${fmt(lrm, 3)}</td>
+      <td class="vpp"><span class="${pctClass(vpp)}">${pct(vpp)}</span></td>
+      <td class="vpn"><span class="${pctClass(vpn)}">${pct(vpn)}</span></td>
+      <td>${rec}</td>
+    </tr>`;
+      }).join('');
+
+      // VPP curves
+      mkChart('c-comp-vpp', {
+        type: 'line',
+        data: {
+          labels: prevArr.map(p => fmt(p * 100, 0)),
+          datasets: [
+            ...tests.map((t, i) => ({
+              label: t.name,
+              data: prevArr.map(p => calcVPP(t.sens, t.espec, p) * 100),
+              borderColor: palette[i % palette.length], backgroundColor: 'transparent',
+              tension: .4, pointRadius: 0, borderWidth: 2
+            })),
+            {
+              label: 'Sin test', data: prevArr.map(p => p * 100), borderColor: '#526277',
+              borderDash: [5, 3], tension: .3, pointRadius: 0, borderWidth: 1.5, backgroundColor: 'transparent'
+            }
+          ]
+        },
+        options: ldc({
+          scales: {
+            x: { ...LDC.scales.x, title: { display: true, text: 'Prevalencia (%)', color: '#526277' } },
+            y: { ...LDC.scales.y, min: 0, max: 100, title: { display: true, text: 'VPP (%)', color: '#526277' } }
+          }
+        })
+      });
+
+      mkChart('c-comp-vpn', {
+        type: 'line',
+        data: {
+          labels: prevArr.map(p => fmt(p * 100, 0)),
+          datasets: tests.map((t, i) => ({
+            label: t.name,
+            data: prevArr.map(p => calcVPN(t.sens, t.espec, p) * 100),
+            borderColor: palette[i % palette.length], backgroundColor: 'transparent',
+            tension: .4, pointRadius: 0, borderWidth: 2
+          }))
+        },
+        options: ldc({
+          scales: {
+            x: { ...LDC.scales.x, title: { display: true, text: 'Prevalencia (%)', color: '#526277' } },
+            y: { ...LDC.scales.y, min: 0, max: 100, title: { display: true, text: 'VPN (%)', color: '#526277' } }
+          }
+        })
+      });
+
+      // Interpretation
+      fillCompareInterp(prev);
+    }
+
+    function fillCompareInterp(prev) {
+      const palette = ['#1a56db', '#059669', '#d97706', '#7c3aed', '#dc2626'];
+      const results = tests.map(t => ({
+        ...t,
+        vpp: calcVPP(t.sens, t.espec, prev),
+        vpn: calcVPN(t.sens, t.espec, prev),
+        lrp: calcLRp(t.sens, t.espec),
+        lrm: calcLRm(t.sens, t.espec)
+      }));
+      results.sort((a, b) => b.vpp - a.vpp);
+      const best = results[0];
+      const bestVPN = [...results].sort((a, b) => b.vpn - a.vpn)[0];
+      const prevContext = prev <= 0.10 ? 'screening poblacional' : prev <= 0.20 ? 'atención primaria' : prev <= 0.35 ? 'consulta especializada' : 'consulta psiquiátrica';
+
+      $('ibox-compare').innerHTML = `
+    <div class="ibox-head"><span class="iicon">⚖️</span>Análisis Comparativo de Tests<span class="itag">Contexto: ${pct(prev)} prevalencia</span></div>
+
+    <div class="iblock">
+      <div class="iblock-title">Mejor VPP en este contexto (${prevContext})</div>
+      <p>Para una prevalencia de ${hv(pct(prev), 'hval-blue')}, el test con mayor valor predictivo positivo es 
+      ${hv(escapeHTML(best.name), 'hval-green')} con VPP = ${hv(pct(best.vpp), 'hval-green')}. 
+      Esto significa que de cada 100 resultados positivos con este test, ${hv(fmt(best.vpp * 100, 0) + ' serían verdaderos positivos', 'hval-green')} 
+      y ${hv(fmt((1 - best.vpp) * 100, 0) + ' falsos positivos', 'hval-red')}. 
+      ${best.lrp < 5 ? `<strong>Precaución:</strong> aunque tiene el mejor VPP entre los tests comparados, el LR+ = ${fmt(best.lrp, 2)} es moderado. 
+      En este contexto de baja prevalencia el VPP sigue siendo limitado y se recomienda confirmar diagnóstico positivo.`:
+          `Con LR+ = ${fmt(best.lrp, 2)}, este test también tiene buena capacidad confirmatoria independiente de la prevalencia.`}</p>
+    </div>
+    <div class="idivider"></div>
+
+    <div class="iblock">
+      <div class="iblock-title">Mejor VPN — Capacidad de screening</div>
+      <p>Para <strong>descartar</strong> la condición, el mayor VPN entre los tests ingresados corresponde a ${hv(escapeHTML(bestVPN.name), 'hval-green')} con VPN = ${hv(pct(bestVPN.vpn), 'hval-green')}. 
+      Un test con alto VPN es ideal como primer paso en un protocolo de dos etapas: <em>primero descartar con test sensible, luego confirmar con test específico</em>. 
+      LR− = ${hv(fmt(bestVPN.lrm, 3), bestVPN.lrm <= 0.2 ? 'hval-green' : 'hval-amber')}: 
+      ${bestVPN.lrm <= 0.1 ? 'excelente capacidad de descarte, el resultado negativo prácticamente excluye la condición.' :
+          bestVPN.lrm <= 0.2 ? 'buena capacidad de descarte.' : 'descarte incompleto, persiste incertidumbre con resultado negativo.'}</p>
+    </div>
+    <div class="idivider"></div>
+
+    <div class="iblock">
+      <div class="iblock-title">Perfil individual de cada test</div>
+      <p>${results.map((t, i) => `<strong style="color:${palette[i % palette.length]}">${t.name}</strong>: 
+      Sens = ${pct(t.sens)}, Espec = ${pct(t.espec)}, LR+ = ${fmt(t.lrp, 2)}, VPP = ${pct(t.vpp)}, VPN = ${pct(t.vpn)}.`).join('<br>')}</p>
+    </div>
+    <div class="idivider"></div>
+
+    <div class="iblock">
+      <div class="iblock-title">Recomendación para este contexto</div>
+      <p>${prev <= 0.15 ?
+          `En <strong>contextos de baja prevalencia</strong> (${pct(prev)}), ningún test autoaplicado es suficiente para confirmar diagnóstico por sí solo. 
+        Se recomienda usar el test de <strong>mayor sensibilidad</strong> como tamizaje (para no perder casos) y reservar la confirmación para entrevista clínica estructurada. 
+        ${results.sort((a, b) => b.sens - a.sens)[0].name} tiene la mayor sensibilidad (${pct(results[0].sens)}).` :
+          prev >= 0.30 ?
+            `En <strong>contextos de alta prevalencia</strong> (${pct(prev)}), la probabilidad pre-test ya es elevada. 
+        Se recomienda priorizar <strong>especificidad</strong> para no sobrediagnosticar. 
+        ${[...results].sort((a, b) => b.espec - a.espec)[0].name} tiene la mayor especificidad (${pct([...results].sort((a, b) => b.espec - a.espec)[0].espec)}).` :
+            `Con prevalencia moderada (${pct(prev)}), se recomienda balancear sensibilidad y especificidad. 
+        El test con mejor LR+ general es ${[...results].sort((a, b) => b.lrp - a.lrp)[0].name} (LR+ = ${fmt([...results].sort((a, b) => b.lrp - a.lrp)[0].lrp, 2)}).`}
+      </p>
+    </div>
+  `;
+    }
+
+    /* ══════════════════════════════════════════
+       TAB 3: PARADOX CHART
+    ══════════════════════════════════════════ */
+    function drawParadox() {
+      const sens = +$('th-sens').value;
+      const espec = +$('th-espec').value;
+      const prevArr = Array.from({ length: 99 }, (_, i) => (i + 1) / 100);
+
+      mkChart('c-paradox', {
+        type: 'line',
+        data: {
+          labels: prevArr.map(p => fmt(p * 100, 0)),
+          datasets: [
+            {
+              label: 'VPP', data: prevArr.map(p => calcVPP(sens, espec, p) * 100),
+              borderColor: '#1a56db', backgroundColor: 'rgba(26,86,219,.07)', fill: true, tension: .4, pointRadius: 0, borderWidth: 2.5
+            },
+            {
+              label: 'VPN', data: prevArr.map(p => calcVPN(sens, espec, p) * 100),
+              borderColor: '#059669', backgroundColor: 'rgba(5,150,105,.05)', fill: true, tension: .4, pointRadius: 0, borderWidth: 2.5
+            },
+            {
+              label: 'Prevalencia (sin test)', data: prevArr.map(p => p * 100),
+              borderColor: '#526277', borderDash: [5, 3], tension: .3, pointRadius: 0, borderWidth: 1.5, backgroundColor: 'transparent'
+            }
+          ]
+        },
+        options: ldc({
+          scales: {
+            x: { ...LDC.scales.x, title: { display: true, text: 'Prevalencia (%)', color: '#526277' } },
+            y: { ...LDC.scales.y, min: 0, max: 100, title: { display: true, text: 'Valor Predictivo (%)', color: '#526277' } }
+          }
+        })
+      });
+    }
+
+    /* ── Init ───────────────────────────────────────────── */
+    window.addEventListener('load', () => {
+      renderTestList();
+      computeSingle();
+      drawParadox();
+    });
+  initializeAuditUI(["computeSingle","computeCompare","drawParadox","loadPreset"]);
+</script>
+<script>window.addEventListener('load',()=>{if(!window.Chart)reportUserError(new Error('No se cargó la biblioteca de gráficos. Compruebe su conexión a internet y recargue la página.'));});</script>
+</body>
+
+</html>

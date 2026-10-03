@@ -1,0 +1,2025 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Estocástico · v4 Mejorado</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════
+   TOKENS & RESET
+══════════════════════════════════════════ */
+:root{
+  --bg:#07090f;
+  --s0:#0e1118;
+  --s1:#141a24;
+  --s2:#1c2436;
+  --border:#252e42;
+  --border2:#2e3a52;
+  --t0:#f0f4ff;
+  --t1:#b8c4d8;
+  --t2:#7a8ba8;
+  --t3:#a5b4ca;
+
+  --blue:#4d9fff;
+  --violet:#9d7dff;
+  --teal:#2dd4bf;
+  --amber:#f59e0b;
+  --rose:#f43f5e;
+  --green:#22c55e;
+  --orange:#fb923c;
+  --cyan:#22d3ee;
+  --pink:#ec4899;
+  --indigo:#6366f1;
+
+  --r:10px;
+  --sh:0 8px 32px rgba(0,0,0,.6);
+  --tr:.18s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--t0);font-family:'Lato',sans-serif;font-size:14px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+::selection{background:rgba(77,159,255,.25);color:var(--t0)}
+
+/* ══════════════════════════════════════════
+   GRID NOISE BACKGROUND
+══════════════════════════════════════════ */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(77,159,255,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(77,159,255,.03) 1px,transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none;z-index:0;
+}
+body>*{position:relative;z-index:1}
+
+/* ══════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════ */
+header{
+  background:linear-gradient(135deg,#07090f 0%,#0e1220 50%,#111828 100%);
+  border-bottom:1px solid var(--border);
+  padding:26px 36px 20px;
+  display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;
+}
+.header-title h1{
+  font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:700;letter-spacing:-1px;
+  background:linear-gradient(100deg,var(--blue) 0%,var(--violet) 60%,var(--teal) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.header-title p{color:var(--t2);font-size:12px;margin-top:3px;letter-spacing:.3px}
+.badge-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px}
+.badge{
+  padding:3px 11px;border-radius:20px;font-size:11px;font-family:'JetBrains Mono',monospace;
+  border:1px solid var(--border2);background:var(--s1);color:var(--t2);
+}
+.badge.b-blue{color:var(--blue);border-color:rgba(77,159,255,.3);background:rgba(77,159,255,.07)}
+.badge.b-violet{color:var(--violet);border-color:rgba(157,125,255,.3);background:rgba(157,125,255,.07)}
+.badge.b-teal{color:var(--teal);border-color:rgba(45,212,191,.3);background:rgba(45,212,191,.07)}
+
+/* ══════════════════════════════════════════
+   TABS
+══════════════════════════════════════════ */
+.tab-bar{
+  background:var(--s0);border-bottom:1px solid var(--border);
+  display:flex;overflow-x:auto;padding:0 36px;gap:0;
+}
+.tab-bar::-webkit-scrollbar{height:3px}
+.tab-bar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.tab-btn{
+  background:none;border:none;color:var(--t2);
+  font-family:'Lato',sans-serif;font-size:12.5px;font-weight:700;letter-spacing:.4px;
+  padding:13px 20px;cursor:pointer;border-bottom:2px solid transparent;
+  transition:var(--tr);white-space:nowrap;text-transform:uppercase;
+  display:flex;align-items:center;gap:7px;
+}
+.tab-btn:hover{color:var(--t0)}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-btn .ti{font-size:14px}
+
+/* ══════════════════════════════════════════
+   PAGES
+══════════════════════════════════════════ */
+.page{display:none;padding:28px 36px;max-width:1360px;margin:0 auto;animation:fadeUp .3s ease}
+.page.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ══════════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════════ */
+.layout{display:grid;gap:20px}
+.layout-1-2{grid-template-columns:300px 1fr}
+.layout-2{grid-template-columns:1fr 1fr}
+.layout-3{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:960px){
+  .layout-1-2,.layout-2,.layout-3{grid-template-columns:1fr}
+  header,.tab-bar,.page{padding-left:16px;padding-right:16px}
+}
+.col{display:flex;flex-direction:column;gap:16px}
+
+/* ══════════════════════════════════════════
+   CARDS
+══════════════════════════════════════════ */
+.card{
+  background:var(--s1);border:1px solid var(--border);border-radius:var(--r);
+  padding:20px;box-shadow:var(--sh);
+}
+.card-head{
+  display:flex;align-items:center;gap:9px;margin-bottom:16px;
+  font-family:'Syne',sans-serif;font-size:.95rem;font-weight:600;color:var(--t0);
+}
+.card-head .pip{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* ══════════════════════════════════════════
+   CONTROLS
+══════════════════════════════════════════ */
+.ctrl{margin-bottom:14px}
+.ctrl label{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:11.5px;color:var(--t2);margin-bottom:5px;letter-spacing:.2px;
+}
+.ctrl label .cv{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:var(--blue);background:rgba(77,159,255,.1);
+  padding:1px 7px;border-radius:4px;
+}
+input[type=range]{
+  width:100%;height:4px;accent-color:var(--blue);cursor:pointer;
+  background:transparent;
+}
+input[type=range]::-webkit-slider-runnable-track{
+  height:4px;border-radius:2px;background:var(--s2);
+}
+input[type=number]{
+  width:100%;background:var(--s2);border:1px solid var(--border2);border-radius:6px;
+  color:var(--t0);font-family:'JetBrains Mono',monospace;font-size:12px;
+  padding:7px 10px;outline:none;transition:border-color var(--tr);
+}
+input[type=number]:focus{border-color:var(--blue)}
+
+.prob-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.prob-grid.g3{grid-template-columns:1fr 1fr 1fr}
+.prob-grid.g5{grid-template-columns:1fr 1fr 1fr 1fr 1fr}
+
+/* ══════════════════════════════════════════
+   BUTTONS
+══════════════════════════════════════════ */
+.btn{
+  width:100%;padding:10px;border:none;border-radius:7px;
+  font-family:'Lato',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px;
+  cursor:pointer;transition:var(--tr);text-transform:uppercase;
+}
+.btn-primary{
+  background:linear-gradient(135deg,var(--blue),#1a5fcf);
+  color:#fff;box-shadow:0 3px 12px rgba(77,159,255,.3);
+}
+.btn-primary:hover{opacity:.88;transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0);opacity:.95}
+
+/* ══════════════════════════════════════════
+   STAT TABLES - MEJORADO PARA POISSON
+══════════════════════════════════════════ */
+.stbl{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:2px;
+  table-layout:fixed; /* Fijo para controlar anchos */
+}
+.stbl th{
+  text-align:left;
+  color:var(--t3);
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.8px;
+  padding:8px 9px;
+  border-bottom:1px solid var(--border);
+}
+.stbl td{
+  padding:8px 9px;
+  border-bottom:1px solid rgba(37,46,66,.5);
+  font-size:12px;
+  vertical-align:top; /* Alineación superior para mejor legibilidad */
+  word-break:break-word; /* Permite saltos de línea si es necesario */
+}
+
+/* Anchos específicos para la tabla de Poisson */
+#tab-poisson .stbl th:first-child,
+#tab-poisson .stbl td:first-child {
+  width: 25%;
+}
+#tab-poisson .stbl th:nth-child(2),
+#tab-poisson .stbl td:nth-child(2) {
+  width: 20%;
+}
+#tab-poisson .stbl th:nth-child(3),
+#tab-poisson .stbl td:nth-child(3) {
+  width: 20%;
+}
+#tab-poisson .stbl th:last-child,
+#tab-poisson .stbl td:last-child {
+  width: 35%;
+}
+
+.stbl tr:last-child td{border-bottom:none}
+.stbl td.rlabel{color:var(--t2);font-size:11.5px}
+.stbl td.rteo{
+  font-family:'JetBrains Mono',monospace;
+  color:var(--violet);
+  font-size:11px;
+}
+.stbl td.rsim{
+  font-family:'JetBrains Mono',monospace;
+  color:var(--teal);
+  font-size:11px;
+}
+.stbl td.rok{
+  color:var(--green);
+  font-size:11px;
+  font-family:'JetBrains Mono',monospace;
+}
+.stbl td.rwarn{
+  color:var(--amber);
+  font-size:11px;
+  font-family:'JetBrains Mono',monospace;
+}
+.stbl td.rfail{
+  color:var(--rose);
+  font-size:11px;
+  font-family:'JetBrains Mono',monospace;
+}
+.stbl td.rnote{
+  color:var(--t2);
+  font-size:10.5px;
+  font-style:italic;
+  line-height:1.4;
+}
+
+/* Contenedor para contenido de celda con formato */
+.cell-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cell-main {
+  font-weight: 500;
+}
+
+.cell-detail {
+  font-size: 9.5px;
+  color: var(--t3);
+  font-style: italic;
+  line-height: 1.3;
+}
+
+/* ══════════════════════════════════════════
+   CHIPS & NOTICES
+══════════════════════════════════════════ */
+.chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;
+  letter-spacing:.3px;
+}
+.chip-ok{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:var(--green)}
+.chip-warn{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:var(--amber)}
+.chip-fail{background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);color:var(--rose)}
+.chip-info{background:rgba(77,159,255,.1);border:1px solid rgba(77,159,255,.3);color:var(--blue)}
+
+.interp{
+  background:var(--s2);border-left:3px solid var(--blue);
+  border-radius:0 6px 6px 0;padding:11px 13px;margin-top:14px;
+  font-size:11.5px;color:var(--t2);line-height:1.75;
+}
+.interp strong{color:var(--t0)}
+.formula{
+  display:inline;font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:var(--violet);background:rgba(157,125,255,.1);
+  padding:1px 6px;border-radius:3px;
+}
+.chi-row{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin-top:12px;padding:9px 13px;
+  background:var(--s2);border-radius:7px;font-size:11.5px;
+}
+.chi-val{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--t0)}
+
+/* ══════════════════════════════════════════
+   CHARTS
+══════════════════════════════════════════ */
+.chart-wrap{position:relative;height:240px}
+.chart-wrap.tall{height:300px}
+
+/* ══════════════════════════════════════════
+   PROB WARNING
+══════════════════════════════════════════ */
+.sum-display{
+  font-size:11px;margin-top:4px;padding:6px 10px;
+  border-radius:5px;display:flex;align-items:center;gap:8px;
+  font-family:'JetBrains Mono',monospace;
+}
+.sum-ok{background:rgba(34,197,94,.1);color:var(--green)}
+.sum-bad{background:rgba(244,63,94,.1);color:var(--rose)}
+
+/* ══════════════════════════════════════════
+   INTERPRETATION PANEL
+══════════════════════════════════════════ */
+.ibox{
+  background:linear-gradient(135deg,var(--s2) 0%,rgba(28,36,54,.7) 100%);
+  border:1px solid var(--border2);border-radius:var(--r);
+  padding:20px 22px;margin-top:0;
+  animation:fadeUp .35s ease;
+}
+.ibox-head{
+  display:flex;align-items:center;gap:10px;margin-bottom:14px;
+  font-family:'Syne',sans-serif;font-size:.88rem;font-weight:600;
+  color:var(--t0);letter-spacing:.2px;
+}
+.ibox-head .iicon{font-size:16px}
+.ibox-head .itag{
+  margin-left:auto;font-family:'JetBrains Mono',monospace;
+  font-size:10px;padding:2px 8px;border-radius:4px;
+  background:rgba(77,159,255,.12);border:1px solid rgba(77,159,255,.25);color:var(--blue);
+}
+.iblock{margin-bottom:14px}
+.iblock:last-child{margin-bottom:0}
+.iblock-title{
+  font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;
+  color:var(--t3);margin-bottom:6px;display:flex;align-items:center;gap:6px;
+}
+.iblock-title::before{content:'';display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--blue);flex-shrink:0}
+.iblock p{font-size:12.5px;color:var(--t1);line-height:1.75}
+.iblock p strong{color:var(--t0)}
+.iblock p em{color:var(--teal);font-style:normal;font-family:'JetBrains Mono',monospace;font-size:11.5px}
+.highlight-val{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(77,159,255,.1);border:1px solid rgba(77,159,255,.2);
+  border-radius:5px;padding:1px 8px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue);
+}
+.highlight-val.hv-green{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.2);color:var(--green)}
+.highlight-val.hv-rose{background:rgba(244,63,94,.1);border-color:rgba(244,63,94,.2);color:var(--rose)}
+.highlight-val.hv-amber{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.2);color:var(--amber)}
+.highlight-val.hv-violet{background:rgba(157,125,255,.1);border-color:rgba(157,125,255,.2);color:var(--violet)}
+.ibox-divider{height:1px;background:var(--border);margin:12px 0}
+.ibox-pending{
+  display:flex;align-items:center;gap:10px;
+  color:var(--t3);font-size:12px;padding:12px 0;font-style:italic;
+}
+
+/* ══════════════════════════════════════════
+   PROBABILITY INPUTS (NEW)
+══════════════════════════════════════════ */
+.prob-input-group{
+  display:flex;align-items:center;gap:8px;
+  margin-bottom:8px;
+}
+.prob-input-group label{
+  font-size:11px;color:var(--t2);
+  min-width:80px;
+  font-family:'JetBrains Mono',monospace;
+}
+.prob-input-group input[type="number"]{
+  width:80px;
+  text-align:center;
+}
+.prob-input-group .prob-pct{
+  font-size:11px;color:var(--t3);
+  min-width:30px;
+}
+
+/* ══════════════════════════════════════════
+   POISSON INTERVAL INPUTS (NEW)
+══════════════════════════════════════════ */
+.interval-calc{
+  background:var(--s2);
+  border:1px solid var(--border2);
+  border-radius:8px;
+  padding:14px;
+  margin-top:12px;
+}
+.interval-calc-title{
+  font-size:11px;
+  color:var(--t2);
+  margin-bottom:10px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+}
+.interval-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-bottom:10px;
+}
+.interval-result{
+  background:var(--s1);
+  border-radius:6px;
+  padding:12px;
+  margin-top:10px;
+  border-left:3px solid var(--amber);
+}
+.interval-result .res-label{
+  font-size:10px;
+  color:var(--t3);
+  margin-bottom:4px;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+}
+.interval-result .res-value{
+  font-family:'JetBrains Mono',monospace;
+  font-size:18px;
+  color:var(--amber);
+  font-weight:600;
+}
+.interval-result .res-sub{
+  font-size:10px;
+  color:var(--t2);
+  margin-top:4px;
+  line-height:1.5;
+}
+.lambda-effective{
+  font-size:11px;
+  color:var(--teal);
+  margin-bottom:8px;
+  font-family:'JetBrains Mono',monospace;
+}
+
+/* ══════════════════════════════════════════
+   SCROLLBAR
+══════════════════════════════════════════ */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+/* ═══ ACCESIBILIDAD Y ENTREGA · v3.1 ═══ */
+:root { --tr:.2s ease; }
+:focus-visible { outline:3px solid #3b82f6;outline-offset:3px; }
+.audit-controls { padding:12px 20px;margin:12px auto;max-width:1400px;border:1px solid currentColor;border-radius:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font:inherit; }
+.audit-controls input { width:130px; }
+.audit-controls p { flex-basis:100%;margin:0;font-size:14px;line-height:1.6; }
+button,.tab-btn,.nav-link,input[type=number],select { min-height:44px; }
+.preset-chip { font:inherit; }
+table { max-width:100%; }
+canvas { max-width:100%; }
+@media(max-width:799px) {
+  .audit-controls { margin:8px;padding:12px; }
+  .grid,.grid-2,.layout,.main-grid,.kpi-row,.metrics-row { grid-template-columns:minmax(0,1fr)!important; }
+  .card,.panel { min-width:0; }
+  .tab-bar,.tabs,.nav-tabs { overflow-x:auto; }
+  .matrix-table { overflow-x:auto;max-width:100%; }
+}
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important;transition:none!important;scroll-behavior:auto!important; } }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-title">
+    <h1>Simulador Estocástico</h1>
+    <p>Distribuciones Discretas, Continuas &amp; Procesos Estocásticos — Psicología Cuantitativa</p>
+    <div class="badge-row">
+      <span class="badge b-blue">Monte Carlo</span>
+      <span class="badge b-violet">MATLAB R2019a</span>
+      <span class="badge b-teal">7 Distribuciones</span>
+      <span class="badge">Interactivo</span>
+    </div>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('binomial',this)">
+    <span class="ti">📊</span>Binomial
+  </button>
+  <button class="tab-btn" onclick="showTab('negbinom',this)">
+    <span class="ti">🔁</span>Bin. Negativa
+  </button>
+  <button class="tab-btn" onclick="showTab('multinom',this)">
+    <span class="ti">🎭</span>Multinomial
+  </button>
+  <button class="tab-btn" onclick="showTab('hyper',this)">
+    <span class="ti">🎲</span>Hipergeométrica
+  </button>
+  <button class="tab-btn" onclick="showTab('poisson',this)">
+    <span class="ti">⚡</span>Poisson
+  </button>
+  <button class="tab-btn" onclick="showTab('expo',this)">
+    <span class="ti">📉</span>Exponencial
+  </button>
+  <button class="tab-btn" onclick="showTab('walk',this)">
+    <span class="ti">🧠</span>Paseo Aleatorio
+  </button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB: BINOMIAL
+══════════════════════════════════════════ -->
+<div id="tab-binomial" class="page active">
+  <div class="layout layout-1-2">
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--blue)"></span>Parámetros</div>
+        <div class="ctrl">
+          <label>Ensayos <em>n</em><span class="cv" id="cv-bn">10</span></label>
+          <input type="range" id="bn" min="5" max="60" value="10" oninput="sync('bn','cv-bn',0)">
+        </div>
+        <div class="ctrl">
+          <label>Prob. de éxito <em>p</em><span class="cv" id="cv-bp">0.60</span></label>
+          <input type="range" id="bp" min="0.01" max="0.99" step="any" value="0.6" oninput="sync('bp','cv-bp',2)">
+        </div>
+        <div class="ctrl">
+          <label>Simulaciones <em>N</em><span class="cv" id="cv-bN">1000</span></label>
+          <input type="range" id="bN" min="200" max="10000" step="100" value="1000" oninput="sync('bN','cv-bN',0)">
+        </div>
+        
+        <!-- NUEVO: Parámetro k para calcular P(X=k) -->
+        <div class="ctrl" style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px;">
+          <label>Calcular probabilidad para k = <span class="cv" id="cv-bk">6</span> éxitos</label>
+          <input type="number" id="bk" min="0" max="60" value="6" oninput="sync('bk','cv-bk',0); validateBinomialK()">
+          <div id="bk-error" style="color:var(--rose);font-size:10px;margin-top:4px;display:none;">⚠ k no puede ser mayor que n</div>
+        </div>
+        <div id="binom-prob-result" style="background:var(--s2);border-radius:6px;padding:10px;margin-top:8px;display:none;">
+          <div style="font-size:11px;color:var(--t2);margin-bottom:4px;">Probabilidad P(X = <span id="res-bk">6</span>):</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--blue);font-weight:600;" id="res-bprob">0.2508</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:4px;">P(X ≤ <span id="res-bk-cum">6</span>) = <span id="res-bcum">0.6177</span> (acumulada)</div>
+        </div>
+        
+        <button class="btn btn-primary" onclick="runBinomial()">▶ Simular</button>
+        <div class="interp">
+          <strong>Contexto:</strong> Modela el número de respuestas reforzadas en <em>n</em> ensayos independientes. Cada ensayo tiene probabilidad <em>p</em> de éxito. <br><br>
+          <span class="formula">μ = np</span> &nbsp; <span class="formula">σ² = np(1−p)</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--teal)"></span>Estadísticos</div>
+        <table class="stbl">
+          <thead><tr><th>Medida</th><th>Teórico</th><th>Simulado</th><th>Error</th></tr></thead>
+          <tbody id="tbl-b"><tr><td colspan="4" style="color:var(--t3);text-align:center;padding:18px">— Ejecuta la simulación —</td></tr></tbody>
+        </table>
+        <div id="chi-b" style="display:none" class="chi-row"></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--blue)"></span>PMF Teórica vs. Monte Carlo</div>
+        <div class="chart-wrap"><canvas id="c-binom-pmf"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--violet)"></span>Función de Distribución Acumulada (CDF)</div>
+        <div class="chart-wrap"><canvas id="c-binom-cdf"></canvas></div>
+      </div>
+      <div id="ibox-b" class="ibox">
+        <div class="ibox-pending">⟳ Ejecuta la simulación para ver la interpretación de resultados</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB: BINOMIAL NEGATIVA
+══════════════════════════════════════════ -->
+<div id="tab-negbinom" class="page">
+  <div class="layout layout-1-2">
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--orange)"></span>Parámetros</div>
+        <div class="ctrl">
+          <label>Éxitos requeridos <em>r</em><span class="cv" id="cv-nr">5</span></label>
+          <input type="range" id="nr" min="1" max="30" value="5" oninput="sync('nr','cv-nr',0)">
+        </div>
+        <div class="ctrl">
+          <label>Prob. de éxito <em>p</em><span class="cv" id="cv-np">0.40</span></label>
+          <input type="range" id="np" min="0.01" max="0.99" step="0.01" value="0.4" oninput="sync('np','cv-np',2)">
+        </div>
+        <div class="ctrl">
+          <label>Simulaciones <em>N</em><span class="cv" id="cv-nN">1000</span></label>
+          <input type="range" id="nN" min="200" max="8000" step="100" value="1000" oninput="sync('nN','cv-nN',0)">
+        </div>
+        <button class="btn btn-primary" onclick="runNegBinom()">▶ Simular</button>
+        <div class="interp">
+          <strong>Contexto:</strong> Modela cuántos <em>fracasos</em> ocurren antes de conseguir <em>r</em> éxitos. En terapia: número de sesiones sin avance antes de lograr <em>r</em> conductas objetivo.<br><br>
+          <span class="formula">μ = r(1−p)/p</span> &nbsp; <span class="formula">σ² = r(1−p)/p²</span><br><br>
+          La distribución binomial negativa admite <strong>sobredispersión</strong> (σ² &gt; μ), lo que la hace útil cuando Poisson no ajusta bien.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--teal)"></span>Estadísticos</div>
+        <table class="stbl">
+          <thead><tr><th>Medida</th><th>Teórico</th><th>Simulado</th><th>Error</th></tr></thead>
+          <tbody id="tbl-nb"><tr><td colspan="4" style="color:var(--t3);text-align:center;padding:18px">— Ejecuta la simulación —</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--orange)"></span>PMF Teórica vs. Simulada</div>
+        <div class="chart-wrap"><canvas id="c-nb-pmf"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--cyan)"></span>Comparación: Binomial Negativa vs. Poisson (mismo μ)</div>
+        <div class="chart-wrap"><canvas id="c-nb-vs"></canvas></div>
+        <p style="font-size:10.5px;color:var(--t3);margin-top:8px;font-style:italic">La Bin. Negativa tiene colas más pesadas que Poisson para la misma media — señal de sobredispersión.</p>
+      </div>
+      <div id="ibox-nb" class="ibox">
+        <div class="ibox-pending">⟳ Ejecuta la simulación para ver la interpretación de resultados</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB: MULTINOMIAL (MEJORADO - 5 ESTADOS)
+══════════════════════════════════════════ -->
+<div id="tab-multinom" class="page">
+  <div class="layout layout-1-2">
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--rose)"></span>Parámetros</div>
+        <div class="ctrl">
+          <label>Eventos por día <em>n</em><span class="cv" id="cv-mn">10</span></label>
+          <input type="range" id="mn" min="5" max="40" value="10" oninput="sync('mn','cv-mn',0)">
+        </div>
+        
+        <!-- NUEVO: 5 estados con inputs manuales de probabilidad -->
+        <p style="font-size:11px;color:var(--t2);margin-bottom:10px">Ingresa las probabilidades para 5 categorías (deben sumar 100%):</p>
+        
+        <div class="prob-input-group">
+          <label style="color:var(--green)">Estado 1 (Positivo):</label>
+          <input type="number" id="mp1" min="0" max="100" value="20" oninput="updateMultiProbs(1)">
+          <span class="prob-pct">%</span>
+        </div>
+        <div class="prob-input-group">
+          <label style="color:var(--rose)">Estado 2 (Negativo):</label>
+          <input type="number" id="mp2" min="0" max="100" value="20" oninput="updateMultiProbs(2)">
+          <span class="prob-pct">%</span>
+        </div>
+        <div class="prob-input-group">
+          <label style="color:var(--violet)">Estado 3 (Neutro):</label>
+          <input type="number" id="mp3" min="0" max="100" value="20" oninput="updateMultiProbs(3)">
+          <span class="prob-pct">%</span>
+        </div>
+        <div class="prob-input-group">
+          <label style="color:var(--amber)">Estado 4 (Ansioso):</label>
+          <input type="number" id="mp4" min="0" max="100" value="20" oninput="updateMultiProbs(4)">
+          <span class="prob-pct">%</span>
+        </div>
+        <div class="prob-input-group">
+          <label style="color:var(--cyan)">Estado 5 (Relajado):</label>
+          <input type="number" id="mp5" min="0" max="100" value="20" oninput="updateMultiProbs(5)">
+          <span class="prob-pct">%</span>
+        </div>
+        
+        <div id="msum" class="sum-display sum-ok" style="margin-top:8px">Σp = <span id="msum-val">100</span>%</div>
+        <div id="m-error" style="color:var(--rose);font-size:10px;margin-top:4px;display:none;">⚠ Las probabilidades deben sumar 100%</div>
+        
+        <div class="ctrl" style="margin-top:12px">
+          <label>Simulaciones <em>N</em><span class="cv" id="cv-mN">500</span></label>
+          <input type="range" id="mN" min="100" max="3000" step="100" value="500" oninput="sync('mN','cv-mN',0)">
+        </div>
+        <button class="btn btn-primary" onclick="runMultinomial()">▶ Simular</button>
+        <div class="interp">
+          <strong>Cov(Xᵢ,Xⱼ)</strong> siempre negativa: <span class="formula">−n·pᵢ·pⱼ</span> por restricción de suma fija. No es un hallazgo empírico.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--teal)"></span>Estadísticos por Categoría</div>
+        <table class="stbl">
+          <thead><tr><th>Categoría</th><th>μ Teórica</th><th>μ Simulada</th><th>Cov Teórica (par)</th></tr></thead>
+          <tbody id="tbl-m"><tr><td colspan="4" style="color:var(--t3);text-align:center;padding:18px">— Ejecuta —</td></tr></tbody>
+        </table>
+        <div id="tbl-corr-wrap" style="display:none;margin-top:10px">
+          <table class="stbl">
+            <thead><tr><th>Par</th><th>Corr. sim.</th><th>Cov teórica</th><th>Nota</th></tr></thead>
+            <tbody id="tbl-corr"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--rose)"></span>Distribuciones Marginales</div>
+        <div class="chart-wrap"><canvas id="c-m-marg"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--violet)"></span>Dispersión Estado 1 vs. Estado 2</div>
+        <div class="chart-wrap"><canvas id="c-m-scat"></canvas></div>
+        <p style="font-size:10.5px;color:var(--t3);margin-top:8px;font-style:italic">Correlación negativa forzada algebraicamente por la restricción Σk = n.</p>
+      </div>
+      <div id="ibox-m" class="ibox">
+        <div class="ibox-pending">⟳ Ejecuta la simulación para ver la interpretación de resultados</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB: HIPERGEOMÉTRICA
+══════════════════════════════════════════ -->
+<div id="tab-hyper" class="page">
+  <div class="layout layout-1-2">
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--cyan)"></span>Parámetros</div>
+        <p style="font-size:11px;color:var(--t2);margin-bottom:12px">Muestreo <strong>sin reemplazo</strong> de una población finita.</p>
+        <div class="ctrl">
+          <label>Población total <em>N</em><span class="cv" id="cv-hN">50</span></label>
+          <input type="range" id="hN" min="10" max="200" step="5" value="50" oninput="sync('hN','cv-hN',0);clampHyper()">
+        </div>
+        <div class="ctrl">
+          <label>Éxitos en población <em>K</em><span class="cv" id="cv-hK">20</span></label>
+          <input type="range" id="hK" min="1" max="100" value="20" oninput="sync('hK','cv-hK',0);clampHyper()">
+        </div>
+        <div class="ctrl">
+          <label>Tamaño de muestra <em>n</em><span class="cv" id="cv-hn">10</span></label>
+          <input type="range" id="hn" min="1" max="100" value="10" oninput="sync('hn','cv-hn',0);clampHyper()">
+        </div>
+        <div id="hcheck" class="sum-display sum-ok">✓ Parámetros válidos: n ≤ N, K ≤ N</div>
+        <div class="ctrl" style="margin-top:12px">
+          <label>Simulaciones <em>S</em><span class="cv" id="cv-hS">1000</span></label>
+          <input type="range" id="hS" min="200" max="8000" step="100" value="1000" oninput="sync('hS','cv-hS',0)">
+        </div>
+        <button class="btn btn-primary" onclick="runHyper()">▶ Simular</button>
+        <div class="interp">
+          <strong>Contexto:</strong> Extraer <em>n</em> pacientes de una lista de <em>N</em> (con <em>K</em> diagnósticos positivos) <strong>sin devolver</strong>. ¿Cuántos diagnósticos positivos habrá en la muestra?<br><br>
+          <span class="formula">μ = nK/N</span> &nbsp; <span class="formula">σ² = n·(K/N)·(1−K/N)·(N−n)/(N−1)</span><br><br>
+          El factor <span class="formula">(N−n)/(N−1)</span> es la corrección de población finita. Cuando N→∞ converge a Binomial(n, K/N).
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--teal)"></span>Estadísticos</div>
+        <table class="stbl">
+          <thead><tr><th>Medida</th><th>Teórico</th><th>Simulado</th><th>Error</th></tr></thead>
+          <tbody id="tbl-h"><tr><td colspan="4" style="color:var(--t3);text-align:center;padding:18px">— Ejecuta —</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--cyan)"></span>PMF Teórica vs. Simulada</div>
+        <div class="chart-wrap"><canvas id="c-h-pmf"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--amber)"></span>Hipergeométrica vs. Binomial(n, K/N)</div>
+        <div class="chart-wrap"><canvas id="c-h-vs"></canvas></div>
+        <p style="font-size:10.5px;color:var(--t3);margin-top:8px;font-style:italic">Cuando N es grande respecto a n, ambas distribuciones convergen.</p>
+      </div>
+      <div id="ibox-h" class="ibox">
+        <div class="ibox-pending">⟳ Ejecuta la simulación para ver la interpretación de resultados</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB: POISSON (MEJORADO - CALCULO POR INTERVALO)
+══════════════════════════════════════════ -->
+<div id="tab-poisson" class="page">
+  <div class="layout layout-1-2">
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--amber)"></span>Parámetros</div>
+        <div class="ctrl">
+          <label>Tasa media <em>λ</em> (eventos/unidad tiempo)<span class="cv" id="cv-pl">2.0</span></label>
+          <input type="range" id="pl" min="0.1" max="12" step="0.1" value="2" oninput="sync('pl','cv-pl',1); updatePoissonIntervalCalc()">
+        </div>
+        <div class="ctrl">
+          <label>Simulaciones <em>N</em><span class="cv" id="cv-pN">1000</span></label>
+          <input type="range" id="pN" min="10" max="1500" step="10" value="1000" oninput="sync('pN','cv-pN',0)">
+        </div>
+        
+        <!-- NUEVO: Calculadora de probabilidad por intervalo -->
+        <div class="interval-calc">
+          <div class="interval-calc-title">Calcular probabilidad para intervalo de tiempo</div>
+          
+          <div class="interval-row">
+            <div class="ctrl" style="margin-bottom:0;">
+              <label style="font-size:10px;">Número de eventos k</label>
+              <input type="number" id="p-int-k" min="0" max="100" value="4" oninput="updatePoissonIntervalCalc()">
+            </div>
+            <div class="ctrl" style="margin-bottom:0;">
+              <label style="font-size:10px;">Intervalo de tiempo n</label>
+              <input type="number" id="p-int-n" min="0.1" max="100" step="0.1" value="2" oninput="updatePoissonIntervalCalc()">
+            </div>
+          </div>
+          
+          <div class="lambda-effective">
+            λ efectivo = <span id="p-lambda-eff">4.0</span> (λ × n = <span id="p-lambda-calc">2.0 × 2.0</span>)
+          </div>
+          
+          <div class="interval-result">
+            <div class="res-label">Probabilidad P(X = k) en intervalo n</div>
+            <div class="res-value" id="p-int-prob">0.1954</div>
+            <div class="res-sub">
+              P(X ≤ <span id="p-int-k-cum">4</span>) = <span id="p-int-cum">0.6288</span> (acumulada) | 
+              P(X > <span id="p-int-k-exc">4</span>) = <span id="p-int-exc">0.3712</span> (excedencia)
+            </div>
+          </div>
+          
+          <div style="font-size:10px;color:var(--t3);margin-top:8px;font-style:italic;">
+            Ejemplo: Si λ = 2 eventos/mes, la probabilidad de observar exactamente 4 eventos en 2 meses es P(X=4) con λ<sub>eff</sub> = 4.
+          </div>
+        </div>
+        
+        <button class="btn btn-primary" onclick="runPoisson()">▶ Simular</button>
+        <div class="interp">
+          <strong>Contexto:</strong> Recaídas mensuales como evento raro independiente. La propiedad central es <span class="formula">E[X] = Var[X] = λ</span>. El índice de dispersión ID = Var/Media → 1 confirma el modelo; ID &gt; 1 indica sobredispersión (evaluar Binomial Negativa).
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--teal)"></span>Estadísticos</div>
+        <table class="stbl">
+          <thead><tr><th>Medida</th><th>Teórico</th><th>Simulado</th><th>Interpretación</th></tr></thead>
+          <tbody id="tbl-p"><tr><td colspan="4" style="color:var(--t3);text-align:center;padding:18px">— Ejecuta —</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--amber)"></span>PMF Teórica vs. Simulada (λ base)</div>
+        <div class="chart-wrap"><canvas id="c-p-pmf"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--orange)"></span>PMF para intervalo n seleccionado (λ<sub>eff</sub> = <span id="p-chart-lambda">4.0</span>)</div>
+        <div class="chart-wrap"><canvas id="c-p-interval"></canvas></div>
+        <p style="font-size:10.5px;color:var(--t3);margin-top:8px;font-style:italic">Distribución de Poisson con tasa ajustada al intervalo de tiempo especificado.</p>
+      </div>
+      <div id="ibox-p" class="ibox">
+        <div class="ibox-pending">⟳ Ejecuta la simulación para ver la interpretación de resultados</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB: EXPONENCIAL
+══════════════════════════════════════════ -->
+<div id="tab-expo" class="page">
+  <div class="layout layout-1-2">
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--green)"></span>Parámetros</div>
+        <p style="font-size:11px;color:var(--t2);margin-bottom:12px">Distribución <strong>continua</strong>. Modela tiempo hasta el próximo evento (recaída, síntoma, etc.).</p>
+        <div class="ctrl">
+          <label>Tasa <em>λ</em> (eventos/unidad tiempo)<span class="cv" id="cv-el">1.0</span></label>
+          <input type="range" id="el" min="0.1" max="5" step="0.1" value="1" oninput="sync('el','cv-el',1)">
+        </div>
+        <div class="ctrl">
+          <label>Simulaciones <em>N</em><span class="cv" id="cv-eN">2000</span></label>
+          <input type="range" id="eN" min="200" max="10000" step="200" value="2000" oninput="sync('eN','cv-eN',0)">
+        </div>
+        <div class="ctrl">
+          <label>Bins para histograma<span class="cv" id="cv-eB">40</span></label>
+          <input type="range" id="eB" min="10" max="100" step="5" value="40" oninput="sync('eB','cv-eB',0)">
+        </div>
+        <button class="btn btn-primary" onclick="runExpo()">▶ Simular</button>
+        <div class="interp">
+          <strong>Propiedad clave — Falta de memoria:</strong> <span class="formula">P(X>s+t | X>s) = P(X>t)</span>. Saber que no hubo recaída en los últimos <em>s</em> días no cambia la probabilidad de recaída futura.<br><br>
+          <span class="formula">μ = 1/λ</span> &nbsp; <span class="formula">σ² = 1/λ²</span> &nbsp; <span class="formula">Mediana = ln(2)/λ</span><br><br>
+          Relacionada con Poisson: si eventos siguen Poisson(λ), el tiempo entre eventos es Exp(λ).
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--teal)"></span>Estadísticos</div>
+        <table class="stbl">
+          <thead><tr><th>Medida</th><th>Teórico</th><th>Simulado</th><th>Error</th></tr></thead>
+          <tbody id="tbl-e"><tr><td colspan="4" style="color:var(--t3);text-align:center;padding:18px">— Ejecuta —</td></tr></tbody>
+        </table>
+        <div class="interp" style="margin-top:12px">
+          <strong>Test de falta de memoria:</strong> La media del proceso después del umbral <em>t</em> debe ser igual a la media global (≈ 1/λ). Se verifica con la submuestra que superó la mediana.
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--green)"></span>PDF Teórica vs. Histograma Simulado</div>
+        <div class="chart-wrap tall"><canvas id="c-e-pdf"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--cyan)"></span>Función de Supervivencia S(t) = P(X &gt; t)</div>
+        <div class="chart-wrap"><canvas id="c-e-surv"></canvas></div>
+      </div>
+      <div id="ibox-e" class="ibox">
+        <div class="ibox-pending">⟳ Ejecuta la simulación para ver la interpretación de resultados</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB: PASEO ALEATORIO
+══════════════════════════════════════════ -->
+<div id="tab-walk" class="page">
+  <div class="layout layout-1-2">
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--violet)"></span>Parámetros</div>
+        <div class="ctrl">
+          <label>Días <em>T</em><span class="cv" id="cv-wT">20</span></label>
+          <input type="range" id="wT" min="10" max="120" value="20" oninput="sync('wT','cv-wT',0)">
+        </div>
+        <div class="ctrl">
+          <label>P(subida) <em>p</em><span class="cv" id="cv-wP">0.50</span></label>
+          <input type="range" id="wP" min="0.10" max="0.90" step="0.05" value="0.5" oninput="sync('wP','cv-wP',2)">
+        </div>
+        <div class="ctrl">
+          <label>Trayectorias ensemble <em>M</em><span class="cv" id="cv-wM">150</span></label>
+          <input type="range" id="wM" min="20" max="500" step="10" value="150" oninput="sync('wM','cv-wM',0)">
+        </div>
+        <button class="btn btn-primary" onclick="runWalk()">▶ Simular</button>
+        <div class="interp">
+          <strong>Proceso de Markov:</strong> X_t = X_{t−1} + ε_t donde ε_t ∈ {+1, −1}.<br><br>
+          Para p = 0.5 (martingala): <span class="formula">E[X_T] = 0</span>, <span class="formula">Var[X_T] = T</span><br>
+          Para p ≠ 0.5 (con drift): <span class="formula">μ = T(2p−1)</span>, <span class="formula">σ² = 4p(1−p)T</span><br><br>
+          Por el <strong>TCL</strong>, X_T converge en distribución a Normal(μ, σ²).
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--teal)"></span>Propiedades Teóricas vs. Simuladas</div>
+        <table class="stbl">
+          <thead><tr><th>Medida</th><th>Teórico</th><th>Simulado</th><th>Notas</th></tr></thead>
+          <tbody id="tbl-w"><tr><td colspan="4" style="color:var(--t3);text-align:center;padding:18px">— Ejecuta —</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--violet)"></span>Ensemble de Trayectorias + IC 95%</div>
+        <div class="chart-wrap tall"><canvas id="c-w-ens"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="pip" style="background:var(--teal)"></span>Distribución Final vs. Normal Teórica (TCL)</div>
+        <div class="chart-wrap"><canvas id="c-w-dist"></canvas></div>
+      </div>
+      <div id="ibox-w" class="ibox">
+        <div class="ibox-pending">⟳ Ejecuta la simulación para ver la interpretación de resultados</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════ -->
+<script>
+/* ═══ NÚCLEO VALIDADO · v3.1 · incrustado en cada HTML autónomo ═══ */
+function escapeHTML(value) { return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function requireProbabilityVector(values, n, title='Distribución', tolerance=0.001) {
+  if(!Array.isArray(values)||values.length!==n||values.some(v=>!Number.isFinite(v)||v<0||v>1)) throw new Error(title+': ingrese '+n+' probabilidades finitas entre 0 y 1.');
+  const sum=values.reduce((a,b)=>a+b,0);
+  if(Math.abs(sum-1)>tolerance) throw new Error(title+': la suma debe ser 1; suma actual '+sum.toFixed(6)+'.');
+  return values.map(v=>v/sum);
+}
+function requireStochastic(P) {
+  if(!Array.isArray(P)||!P.length) throw new Error('La matriz está vacía.');
+  return P.map((row,i)=>requireProbabilityVector(row,P.length,'Fila '+(i+1)));
+}
+function solveLinear(A,b) {
+  const n=A.length, M=A.map((r,i)=>[...r,b[i]]);
+  for(let c=0;c<n;c++) {
+    let pivot=c; for(let i=c+1;i<n;i++) if(Math.abs(M[i][c])>Math.abs(M[pivot][c])) pivot=i;
+    if(Math.abs(M[pivot][c])<1e-12) return null;
+    [M[c],M[pivot]]=[M[pivot],M[c]];
+    const scale=M[c][c]; for(let j=c;j<=n;j++) M[c][j]/=scale;
+    for(let i=0;i<n;i++) if(i!==c) {const f=M[i][c];for(let j=c;j<=n;j++)M[i][j]-=f*M[c][j];}
+  }
+  return M.map(r=>r[n]);
+}
+function markovStructure(P) {
+  const n=P.length, reach=P.map((r,i)=>r.map((v,j)=>v>0||i===j));
+  for(let k=0;k<n;k++)for(let i=0;i<n;i++)for(let j=0;j<n;j++)reach[i][j]=reach[i][j]||(reach[i][k]&&reach[k][j]);
+  const seen=new Set(), classes=[];
+  for(let i=0;i<n;i++) if(!seen.has(i)) {const cls=[];for(let j=0;j<n;j++)if(reach[i][j]&&reach[j][i]){cls.push(j);seen.add(j);}classes.push(cls);}
+  const closed=classes.filter(cls=>cls.every(i=>P[i].every((v,j)=>v===0||cls.includes(j))));
+  const gcd=(a,b)=>b?gcd(b,a%b):Math.abs(a);
+  const periods=closed.map(cls=>{const d=Array(n).fill(null),queue=[cls[0]];d[cls[0]]=0;for(let q=0;q<queue.length;q++)for(const j of cls)if(P[queue[q]][j]>0&&d[j]===null){d[j]=d[queue[q]]+1;queue.push(j);}let g=0;for(const i of cls)for(const j of cls)if(P[i][j]>0)g=gcd(g,d[i]+1-d[j]);return g||1;});
+  return {reach,closed,periods,unique:closed.length===1,periodic:periods.some(p=>p>1)};
+}
+function stationaryDistribution(P,initial=null) {
+  P=requireStochastic(P);const n=P.length, init=initial?requireProbabilityVector(initial,n):Array(n).fill(1/n);
+  const info=markovStructure(P), closedSet=new Set(info.closed.flat()), trans=Array.from({length:n},(_,i)=>i).filter(i=>!closedSet.has(i));
+  const out=Array(n).fill(0);
+  for(const cls of info.closed) {
+    const size=cls.length, A=cls.map((j,r)=>cls.map((i,c)=>P[i][j]-(r===c?1:0))), b=Array(size).fill(0);
+    A[size-1]=Array(size).fill(1);b[size-1]=1;const local=solveLinear(A,b);
+    if(!local) throw new Error('No se pudo resolver la distribución estacionaria.');
+    let weight=cls.reduce((s,i)=>s+init[i],0);
+    if(trans.length){const M=trans.map((i,r)=>trans.map((j,c)=>(r===c?1:0)-P[i][j])), R=trans.map(i=>cls.reduce((s,j)=>s+P[i][j],0));const h=solveLinear(M,R);if(!h)throw new Error('No se pudo resolver la absorción entre clases.');weight+=trans.reduce((s,i,r)=>s+init[i]*h[r],0);}
+    cls.forEach((i,r)=>out[i]=Math.max(0,local[r])*weight);
+  }
+  const residual=out.reduce((s,v,j)=>s+Math.abs(v-out.reduce((a,x,i)=>a+x*P[i][j],0)),0);
+  if(!out.every(Number.isFinite)||residual>1e-8)throw new Error('Distribución estacionaria con residuo excesivo.');
+  out.details={...info,residual};return out;
+}
+function meanFirstPassage(P,target) {
+  P=requireStochastic(P);const n=P.length;
+  if(!Number.isInteger(target)||target<0||target>=n)throw new Error('Estado objetivo inválido.');
+  // La meta se detiene al primer arribo: no explorar sus salidas.
+  const stopped=P.map((r,i)=>i===target?r.map((_,j)=>j===target?1:0):r.slice());
+  const info=markovStructure(stopped), bad=info.closed.filter(c=>!c.includes(target)).flat();
+  const finite=Array.from({length:n},(_,i)=>i).filter(i=>i!==target&&!bad.some(j=>info.reach[i][j]));
+  const M=finite.map((i,r)=>finite.map((j,c)=>(r===c?1:0)-P[i][j]));
+  const times=finite.length?solveLinear(M,Array(finite.length).fill(1)):[];
+  if(!times)throw new Error('No se pudo resolver el tiempo de llegada.');
+  return Array.from({length:n},(_,i)=>i).filter(i=>i!==target).map(i=>finite.includes(i)?times[finite.indexOf(i)]:Infinity);
+}
+function strictObservations(text,continuous=false,nStates=null,line=1) {
+  const raw=String(text).trim();if(!raw)throw new Error('Línea '+line+': faltan observaciones.');
+  const tokens=raw.includes(',')||raw.includes(';')?raw.split(/[,;]/):raw.split(/\s+/);
+  return tokens.map((token,i)=>{const clean=token.trim();if(!clean)throw new Error('Línea '+line+', observación '+(i+1)+': dato ausente.');const v=Number(clean);if(!Number.isFinite(v)||(!continuous&&!Number.isInteger(v))||(!continuous&&(v<0||(nStates!==null&&v>=nStates))))throw new Error('Línea '+line+', observación '+(i+1)+': valor inválido «'+clean+'». No se eliminarán observaciones ni se comprimirá el tiempo.');return v;});
+}
+function parseNamedSubjects(text,continuous=false,nStates=null) {
+  return String(text).split('\n').flatMap((line,index)=>{line=line.trim();if(!line||line.startsWith('#'))return [];const colon=line.indexOf(':');return [{name:colon>=0?line.slice(0,colon).trim():'Sujeto '+(index+1),obs:strictObservations(colon>=0?line.slice(colon+1):line,continuous,nStates,index+1)}];});
+}
+function strictStateLabels(text,names,n,line=1){const tokens=String(text).includes(',')||String(text).includes(';')?String(text).split(/[,;]/):String(text).trim().split(/\s+/);return tokens.map((token,i)=>{const value=token.trim(),index=names.findIndex(s=>s.toLowerCase()===value.toLowerCase());if(index>=0&&index<n)return index;return strictObservations(value,false,n,line)[0];});}
+function validateCTMCRecords(lines,nStates,baseStates){lines.forEach((line,index)=>{const row=strictObservations(line,true,null,index+1);if(row.length!==3||!Number.isInteger(row[0])||!Number.isInteger(row[1])||row[0]<0||row[1]<0||row[0]>=nStates||row[1]>=nStates||row[0]===row[1]||row[0]>=baseStates||row[2]<=0)throw new Error('Registro CTMC inválido en línea '+(index+1)+': se requieren origen, destino y duración positiva; el origen no puede ser absorbente.');});}
+function isStableAR(phi,margin=1e-6) {
+  if(phi.some(v=>!Number.isFinite(v)))return false;
+  let work=phi.slice();for(let p=work.length;p>0;p--){const k=work[p-1];if(Math.abs(k)>=1-margin)return false;const prev=[];for(let i=0;i<p-1;i++)prev.push((work[i]+k*work[p-2-i])/(1-k*k));work=prev;}return true;
+}
+function stableARCoefficients(phi) {
+  if(isStableAR(phi,0.001))return phi.slice();
+  let factor=1;for(let i=0;i<300;i++){factor*=0.97;const candidate=phi.map(v=>v*factor);if(isStableAR(candidate,0.001))return candidate;}
+  throw new Error('No se pudo estabilizar el modelo AR.');
+}
+function constrainedWLS(y,X,w,inverse,ridge=1e-6) {
+  if(!y.length||!X.length)return {beta:[],varc:1,se:[]};
+  const n=X[0].length, M=Array.from({length:n},()=>Array(n).fill(0)),b=Array(n).fill(0);let sw=0;
+  y.forEach((v,i)=>{if(!Number.isFinite(v)||!Number.isFinite(w[i])||w[i]<0||X[i].some(x=>!Number.isFinite(x)))throw new Error('Datos no finitos en regresión.');sw+=w[i];for(let j=0;j<n;j++){b[j]+=w[i]*X[i][j]*v;for(let k=0;k<n;k++)M[j][k]+=w[i]*X[i][j]*X[i][k];}});
+  if(sw<1e-10)return {beta:Array(n).fill(0),varc:1,se:Array(n).fill(0)};
+  M.forEach((r,i)=>r[i]+=ridge);let beta=solveLinear(M,b);if(!beta)throw new Error('Regresión singular.');
+  const original=beta.slice(),phi=stableARCoefficients(beta.slice(1));beta=[beta[0],...phi];
+  beta[0]=y.reduce((s,v,i)=>s+w[i]*(v-phi.reduce((a,p,j)=>a+p*X[i][j+1],0)),0)/sw;
+  const err=y.reduce((s,v,i)=>s+w[i]*(v-X[i].reduce((a,x,j)=>a+x*beta[j],0))**2,0),varc=Math.max(1e-4,err/sw),inv=inverse(M);
+  return {beta,varc,se:inv?inv.map((r,j)=>Math.sqrt(Math.max(0,varc*r[j]))):Array(n).fill(0),constrained:original.some((v,i)=>Math.abs(v-beta[i])>1e-6)};
+}
+let auditSeedState=42;
+function setSimulationSeed(seed) {if(!Number.isInteger(seed)||seed<0||seed>4294967295)throw new Error('La semilla debe ser un entero entre 0 y 4294967295.');auditSeedState=seed>>>0;}
+function auditRandom(){auditSeedState=(auditSeedState+0x6D2B79F5)>>>0;let t=auditSeedState;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;}
+function gammaLog(z){const co=[676.5203681218851,-1259.1392167224028,771.3234287776531,-176.6150291621406,12.507343278686905,-.1385710952657201,9.984369578019572e-6,1.505632735149312e-7];if(z<.5)return Math.log(Math.PI)-Math.log(Math.sin(Math.PI*z))-gammaLog(1-z);z--;let x=.9999999999998099;co.forEach((v,i)=>x+=v/(z+i+1));const t=z+7.5;return .5*Math.log(2*Math.PI)+(z+.5)*Math.log(t)-t+Math.log(x);}
+function chiSquareSurvival(x,df){if(x===Infinity)return 0;if(!Number.isFinite(x)||x<0||df<=0)return null;if(x===0)return 1;const a=df/2,z=x/2,scale=Math.exp(-z+a*Math.log(z)-gammaLog(a));if(z<a+1){let sum=1/a,term=sum;for(let k=1;k<10000;k++){term*=z/(a+k);sum+=term;if(Math.abs(term)<Math.abs(sum)*1e-14)break;}return Math.max(0,Math.min(1,1-scale*sum));}let b=z+1-a,c=1e300,d=1/b,h=d;for(let i=1;i<10000;i++){const an=-i*(i-a);b+=2;d=an*d+b;if(Math.abs(d)<1e-300)d=1e-300;c=b+an/c;if(Math.abs(c)<1e-300)c=1e-300;d=1/d;const delta=d*c;h*=delta;if(Math.abs(delta-1)<1e-14)break;}return Math.max(0,Math.min(1,scale*h));}
+function groupedChiSquare(obs,expected,estimatedParams=0){if(obs.length!==expected.length||obs.some(v=>!Number.isFinite(v)||v<0)||expected.some(v=>!Number.isFinite(v)||v<0))throw new Error('Conteos inválidos para χ².');let groups=[],o=0,e=0;obs.forEach((v,i)=>{if(expected[i]===0&&v>0){groups.push([v,0]);return;}o+=v;e+=expected[i];if(e>=5){groups.push([o,e]);o=0;e=0;}});if(e>0||o>0){if(groups.length){groups.at(-1)[0]+=o;groups.at(-1)[1]+=e;}else groups.push([o,e]);}const df=groups.length-1-estimatedParams;const stat=groups.reduce((s,[a,b])=>s+(b===0?(a>0?Infinity:0):(a-b)**2/b),0);return {stat,df:Math.max(0,df),pv:df>0&&groups.every(g=>g[1]>=5)?chiSquareSurvival(stat,df):null,groups};}
+function downloadAuditText(filename,text){const blob=new Blob([text],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function reportUserError(error){const el=document.getElementById('audit-status');if(el){el.textContent=error.message||String(error);el.setAttribute('role','alert');}else alert(error.message||String(error));}
+function updateAccessibleCharts(){if(!window.Chart?.getChart)return;for(const canvas of document.querySelectorAll('canvas')){const chart=Chart.getChart(canvas);if(!chart?.data)continue;let details=document.getElementById('audit-table-'+canvas.id);if(!details){details=document.createElement('details');details.id='audit-table-'+canvas.id;details.className='audit-chart-table';canvas.insertAdjacentElement('afterend',details);}const labels=chart.data.labels||[],datasets=chart.data.datasets||[],n=Math.max(labels.length,...datasets.map(d=>d.data?.length||0));details.innerHTML='<summary>Consultar datos del gráfico en tabla</summary><div style="overflow:auto"><table><thead><tr><th scope="col">Observación</th>'+datasets.map(d=>'<th scope="col">'+escapeHTML(d.label||'Serie')+'</th>').join('')+'</tr></thead><tbody>'+Array.from({length:n},(_,i)=>'<tr><th scope="row">'+escapeHTML(labels[i]??i)+'</th>'+datasets.map(d=>{const v=d.data?.[i],text=v&&typeof v==='object'?Object.entries(v).map(([k,x])=>k+': '+x).join(', '):v??'—';return '<td>'+escapeHTML(text)+'</td>';}).join('')+'</tr>').join('')+'</tbody></table></div>';}}
+function runComputeWorker(entry,job,functions){return new Promise((resolve,reject)=>{const code='let auditSeedState=42;\n'+functions.map(f=>f.toString()).join('\n')+'\nonmessage=e=>{try{postMessage({result:'+entry+'(e.data,p=>postMessage({progress:p}))});}catch(e){postMessage({error:e.message});}}',url=URL.createObjectURL(new Blob([code],{type:'text/javascript'})),worker=new Worker(url),button=document.createElement('button');button.textContent='Cancelar cálculo';button.type='button';document.querySelector('.audit-controls').appendChild(button);const clean=()=>{worker.terminate();URL.revokeObjectURL(url);button.remove();};button.onclick=()=>{clean();reject(new Error('Cálculo cancelado.'));};worker.onmessage=e=>{if(e.data.progress!==undefined)document.getElementById('audit-status').textContent='Ajuste: '+Math.round(e.data.progress*100)+'%';if(e.data.error){clean();reject(new Error(e.data.error));}if(e.data.result){clean();resolve(e.data.result);}};worker.onerror=e=>{clean();reject(new Error(e.message||'Error al calcular.'));};worker.postMessage(job);});}
+function initializeAuditUI(runNames=[]) {
+  const controls=document.createElement('section');controls.className='audit-controls';controls.setAttribute('aria-label','Reproducibilidad y exportación');
+  controls.innerHTML='<label for="audit-seed">Semilla de simulación</label><input id="audit-seed" type="number" min="0" max="4294967295" step="1" value="42"><button type="button" id="audit-export">Descargar resultados y configuración</button><p id="audit-status" role="status" aria-live="polite">Versión 3.1 · Los resultados son probabilísticos y educativos; no constituyen diagnóstico ni reemplazan el juicio profesional.</p>';
+  const header=document.querySelector('header');(header||document.body).insertAdjacentElement(header?'afterend':'afterbegin',controls);
+  document.getElementById('audit-export').onclick=()=>{const inputs=Array.from(document.querySelectorAll('input,select,textarea')).map(e=>(e.getAttribute('aria-label')||e.id||e.name||e.type)+': '+e.value).join('\n');const text=document.body.innerText||document.body.textContent;downloadAuditText(document.title.replace(/[^\p{L}\p{N}_-]/gu,'_')+'.txt','Versión 3.1\n'+inputs+'\n\n'+text);};
+  for(const name of runNames){const original=window[name];if(typeof original!=='function')continue;window[name]=function(...args){try{setSimulationSeed(Number(document.getElementById('audit-seed').value));for(const e of document.querySelectorAll('input[type="number"],input[type="range"]'))if(!e.disabled&&e.offsetParent!==null&&(!e.value.trim()||!Number.isFinite(Number(e.value))||(e.min!==''&&Number(e.value)<Number(e.min))||(e.max!==''&&Number(e.value)>Number(e.max))))throw new Error('Revise el campo '+(e.getAttribute('aria-label')||e.id)+': el valor está fuera de su rango.');const result=original.apply(this,args);if(result&&typeof result.catch==='function')return result.then(value=>{updateAccessibleCharts();return value;}).catch(reportUserError);updateAccessibleCharts();return result;}catch(e){reportUserError(e);}};}
+  const labelFields=()=>{for(const e of document.querySelectorAll('input,select,textarea')){if(e.getAttribute('aria-label')||e.labels?.length)continue;const match=(e.id||'').match(/^(.+?)[_-](\d+)[_-](\d+)$/);e.setAttribute('aria-label',match?match[1]+': origen '+(Number(match[2])+1)+', destino '+(Number(match[3])+1):e.placeholder||e.previousElementSibling?.textContent?.trim()||e.id||'Valor configurable');}};
+  labelFields();new MutationObserver(labelFields).observe(document.body,{childList:true,subtree:true});
+  for(const chartClass of ['Chart']){const C=window[chartClass];if(C?.defaults){C.defaults.interaction.mode='index';C.defaults.interaction.intersect=false;C.defaults.plugins.tooltip.callbacks.label=ctx=>' '+ctx.dataset.label+': '+Number(ctx.parsed.y??ctx.parsed).toFixed(4);}}
+}
+
+
+'use strict';
+/* ── Utilidades básicas ──────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+function sync(rid, cid, dec){
+  const v = +$(rid).value;
+  $(cid).textContent = v.toFixed(dec);
+  // Actualizar cálculos de probabilidad en tiempo real para Binomial
+  if(rid === 'bn' || rid === 'bp' || rid === 'bk') updateBinomialProb();
+}
+function fmt(v,d=4){return v===null?'No evaluable':!Number.isFinite(+v)?(+v===Infinity?'∞':'No definido'):(+v).toFixed(d);}
+function pctErr(sim, teo){ return teo===0?'—':(Math.abs(sim-teo)/Math.abs(teo)*100).toFixed(1)+'%'; }
+function errClass(v){ const n=parseFloat(v); return n<5?'rok':n<15?'rwarn':'rfail'; }
+
+/* ── Estadísticos ────────────────────────────────────────────── */
+function mean(a){ return a.reduce((s,v)=>s+v,0)/a.length; }
+function variance(a){ const m=mean(a); return a.reduce((s,v)=>s+(v-m)**2,0)/(a.length-1); }
+function covariance(a,b){
+  const ma=mean(a),mb=mean(b);
+  return a.reduce((s,v,i)=>s+(v-ma)*(b[i]-mb),0)/(a.length-1);
+}
+function pearsonR(a,b){
+  const sa=Math.sqrt(variance(a)),sb=Math.sqrt(variance(b));
+  return (sa===0||sb===0)?0:covariance(a,b)/(sa*sb);
+}
+
+/* ── Generadores aleatorios ──────────────────────────────────── */
+function randU(){ return auditRandom(); }
+function randBinom(n,p){ let s=0; for(let i=0;i<n;i++) if(randU()<p) s++; return s; }
+function randPoisson(lam){
+  const L=Math.exp(-lam); let k=0,p=1;
+  do{ k++; p*=randU(); }while(p>L);
+  return k-1;
+}
+function randNegBinom(r,p){
+  let fails=0;
+  for(let i=0;i<r;i++){
+    while(randU()>=p) fails++;
+  }
+  return fails;
+}
+function randHyper(N,K,n){
+  let k=0; const pop=[];
+  for(let i=0;i<K;i++) pop.push(1);
+  for(let i=K;i<N;i++) pop.push(0);
+  for(let i=0;i<n;i++){
+    const j=i+Math.floor(randU()*(N-i));
+    [pop[i],pop[j]]=[pop[j],pop[i]];
+    k+=pop[i];
+  }
+  return k;
+}
+function randExpo(lam){ return -Math.log(1-randU())/lam; }
+function randNormal(mu,sig){
+  const u1=randU(),u2=randU();
+  return mu+sig*Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+}
+
+/* ── PMF functions ───────────────────────────────────────────── */
+function binomPMF(k,n,p){
+  if(k<0||k>n) return 0;
+  let c=1; for(let i=0;i<k;i++) c*=(n-i)/(i+1);
+  return c*p**k*(1-p)**(n-k);
+}
+function negBinomPMF(k,r,p){
+  if(k<0) return 0;
+  let c=1; for(let i=0;i<k;i++) c*=(r+i)/(i+1);
+  return c*p**r*(1-p)**k;
+}
+function hyperPMF(k,N,K,n){
+  if(k<Math.max(0,n+K-N)||k>Math.min(n,K)) return 0;
+  function logFact(x){ let l=0; for(let i=2;i<=x;i++) l+=Math.log(i); return l; }
+  function logC(a,b){ if(b<0||b>a) return -Infinity; return logFact(a)-logFact(b)-logFact(a-b); }
+  return Math.exp(logC(K,k)+logC(N-K,n-k)-logC(N,n));
+}
+function poisPMF(k,lam){
+  let p=Math.exp(-lam); for(let i=1;i<=k;i++) p*=lam/i;
+  return p;
+}
+function expoPDF(x,lam){ return x<0?0:lam*Math.exp(-lam*x); }
+function expoSurv(x,lam){ return x<0?1:Math.exp(-lam*x); }
+function normPDF(x,mu,sig){ return Math.exp(-0.5*((x-mu)/sig)**2)/(sig*Math.sqrt(2*Math.PI)); }
+
+/* ── Chi² GOF ────────────────────────────────────────────────── */
+function chi2GOF(obs,exp){return groupedChiSquare(obs,exp);}
+function erf(x){
+  const t=1/(1+0.3275911*Math.abs(x));
+  const y=1-t*(0.254829592+t*(-0.284496736+t*(1.421413741+t*(-1.453152027+t*1.061405429))))*Math.exp(-x*x);
+  return x>=0?y:-y;
+}
+
+/* ── Chart registry ──────────────────────────────────────────── */
+const CHARTS={};
+function mkChart(id,cfg){
+  if(CHARTS[id]){ CHARTS[id].destroy(); delete CHARTS[id]; }
+  const ctx = $(id);
+  if(!ctx) return;
+  CHARTS[id]=new Chart(ctx.getContext('2d'),cfg);
+  return CHARTS[id];
+}
+
+/* ── Dark chart defaults ─────────────────────────────────────── */
+const DC={
+  color:'#7a8ba8',
+  plugins:{
+    legend:{labels:{color:'#7a8ba8',font:{family:'JetBrains Mono',size:10}}},
+    tooltip:{backgroundColor:'#1c2436',borderColor:'#2e3a52',borderWidth:1,
+             titleColor:'#f0f4ff',bodyColor:'#7a8ba8',
+             titleFont:{family:'JetBrains Mono'},bodyFont:{family:'JetBrains Mono',size:11}}
+  },
+  scales:{
+    x:{ticks:{color:'#a5b4ca',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(37,46,66,.4)'}},
+    y:{ticks:{color:'#a5b4ca',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(37,46,66,.4)'}}
+  },
+  animation:{duration:400}
+};
+function deepMerge(base,ext){
+  const out={...base};
+  for(const k in ext){
+    if(ext[k]&&typeof ext[k]==='object'&&!Array.isArray(ext[k]))
+      out[k]=deepMerge(base[k]||{},ext[k]);
+    else out[k]=ext[k];
+  }
+  return out;
+}
+function dc(extra={}){ return deepMerge(DC,extra); }
+
+/* ── Tab switching ───────────────────────────────────────────── */
+function showTab(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  $('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ── Stat table builder ──────────────────────────────────────── */
+function fillTable(id, rows){
+  $(id).innerHTML = rows.map(r=>`
+    <tr>
+      <td class="rlabel">${r[0]}</td>
+      <td class="rteo">${r[1]}</td>
+      <td class="rsim">${r[2]}</td>
+      <td class="${r[4]||'rnote'}">${r[3]}</td>
+    </tr>`).join('');
+}
+
+/* ── Interpretation panel builder ───────────────────────────── */
+function hv(val,cls=''){return`<span class="highlight-val ${cls}">${val}</span>`}
+function fillInterp(id, color, icon, label, blocks){
+  $(id).innerHTML=`
+    <div class="ibox-head">
+      <span class="iicon">${icon}</span> ${label}
+      <span class="itag">Interpretación de resultados</span>
+    </div>
+    ${blocks.map(b=>`
+      <div class="iblock">
+        <div class="iblock-title">${b.title}</div>
+        <p>${b.text}</p>
+      </div>
+      <div class="ibox-divider"></div>`).join('').replace(/<div class="ibox-divider"><\/div>$/,'')}
+  `;
+  $(id).style.borderLeftColor=color;
+  $(id).style.borderLeftWidth='3px';
+}
+
+/* ══════════════════════════════════════════
+   NUEVAS FUNCIONES: Cálculo de probabilidades específicas
+══════════════════════════════════════════ */
+
+function validateBinomialK() {
+  const n = +$('bn').value;
+  const k = +$('bk').value;
+  const errorEl = $('bk-error');
+  if (k > n) {
+    errorEl.style.display = 'block';
+    $('binom-prob-result').style.display = 'none';
+    return false;
+  } else {
+    errorEl.style.display = 'none';
+    return true;
+  }
+}
+
+function updateBinomialProb() {
+  if (!validateBinomialK()) return;
+  
+  const n = +$('bn').value;
+  const p = +$('bp').value;
+  const k = +$('bk').value;
+  
+  const prob = binomPMF(k, n, p);
+  
+  let cumProb = 0;
+  for (let i = 0; i <= k; i++) {
+    cumProb += binomPMF(i, n, p);
+  }
+  
+  $('res-bk').textContent = k;
+  $('res-bprob').textContent = prob.toFixed(4);
+  $('res-bk-cum').textContent = k;
+  $('res-bcum').textContent = cumProb.toFixed(4);
+  $('binom-prob-result').style.display = 'block';
+}
+
+/* ══════════════════════════════════════════
+   NUEVA FUNCIÓN: Cálculo de Poisson por intervalo
+══════════════════════════════════════════ */
+function updatePoissonIntervalCalc() {
+  const lambda = +$('pl').value;
+  const k = +$('p-int-k').value;
+  const n = +$('p-int-n').value;
+  
+  const lambdaEff = lambda * n;
+  
+  // Calcular P(X = k) con lambda efectivo
+  const prob = poisPMF(k, lambdaEff);
+  
+  // Calcular P(X <= k) acumulada
+  let cumProb = 0;
+  const maxCalc = Math.max(k, Math.ceil(lambdaEff * 3));
+  for (let i = 0; i <= maxCalc; i++) {
+    cumProb += poisPMF(i, lambdaEff);
+    if (i === k) break;
+  }
+  
+  // Actualizar UI
+  $('p-lambda-eff').textContent = lambdaEff.toFixed(1);
+  $('p-lambda-calc').textContent = lambda.toFixed(1) + ' × ' + n.toFixed(1);
+  $('p-int-prob').textContent = prob.toFixed(4);
+  $('p-int-k-cum').textContent = k;
+  $('p-int-cum').textContent = cumProb.toFixed(4);
+  $('p-int-k-exc').textContent = k;
+  $('p-int-exc').textContent = (1 - cumProb).toFixed(4);
+  $('p-chart-lambda').textContent = lambdaEff.toFixed(1);
+  
+  // Actualizar gráfica del intervalo
+  updatePoissonIntervalChart(lambdaEff);
+}
+
+function updatePoissonIntervalChart(lambdaEff) {
+  const maxK = Math.max(15, Math.ceil(lambdaEff * 4));
+  const ks = Array.from({length: maxK + 1}, (_, i) => i);
+  const pmf = ks.map(k => poisPMF(k, lambdaEff));
+  
+  mkChart('c-p-interval', {
+    type: 'bar',
+    data: {
+      labels: ks,
+      datasets: [{
+        label: `PMF Poisson(λ=${lambdaEff.toFixed(1)})`,
+        data: pmf,
+        backgroundColor: pmf.map((_, i) => i === Math.round(lambdaEff) ? 'rgba(245, 158, 11, 0.6)' : 'rgba(245, 158, 11, 0.3)'),
+        borderColor: 'rgba(245, 158, 11, 0.8)',
+        borderWidth: 1
+      }]
+    },
+    options: dc({
+      scales: {
+        x: {...DC.scales.x, title: {display: true, text: 'k (eventos en intervalo n)', color: '#a5b4ca'}},
+        y: {...DC.scales.y, title: {display: true, text: 'P(X = k)', color: '#a5b4ca'}}
+      },
+      plugins: {
+        legend: {display: false}
+      }
+    })
+  });
+}
+
+/* ══════════════════════════════════════════
+   1. BINOMIAL (MEJORADO)
+══════════════════════════════════════════ */
+function runBinomial(){
+  const n=+$('bn').value, p=+$('bp').value, N=+$('bN').value;
+  const ks=Array.from({length:n+1},(_,i)=>i);
+  const pmf=ks.map(k=>binomPMF(k,n,p));
+  const cdf=pmf.reduce((a,v,i)=>{a.push((a[i-1]||0)+v);return a;},[]);
+  const sim=Array.from({length:N},()=>randBinom(n,p));
+  const freq=new Array(n+1).fill(0);
+  sim.forEach(v=>freq[v]++);
+  const rel=freq.map(f=>f/N);
+  const sm=mean(sim), sv=variance(sim);
+  const tm=n*p, tv=n*p*(1-p);
+  const {stat,df,pv}=chi2GOF(freq,pmf.map(x=>x*N));
+
+  fillTable('tbl-b',[
+    ['Media μ = np', fmt(tm), fmt(sm), pctErr(sm,tm), errClass(pctErr(sm,tm))],
+    ['Varianza σ² = np(1−p)', fmt(tv), fmt(sv), pctErr(sv,tv), errClass(pctErr(sv,tv))],
+    ['Desv. Estándar σ', fmt(Math.sqrt(tv)), fmt(Math.sqrt(sv)), pctErr(Math.sqrt(sv),Math.sqrt(tv)), errClass(pctErr(Math.sqrt(sv),Math.sqrt(tv)))]
+  ]);
+
+  const chiEl=$('chi-b');
+  chiEl.style.display='flex';
+  const ok=pv!==null&&pv>0.05;
+  chiEl.innerHTML=`<span class="chip ${ok?'chip-ok':'chip-fail'}">${pv===null?'No evaluable: clases insuficientes':ok?'✓ H₀ no rechazada':'✗ H₀ rechazada'}</span>
+    <span class="chi-val">χ²(${df}) = ${fmt(stat,3)},  p = ${fmt(pv,4)}</span>
+    <span style="color:var(--t2);font-size:11px">${ok?'Buen ajuste simulación–teoría':'Posible discrepancia (aumenta N)'}</span>`;
+
+  mkChart('c-binom-pmf',{type:'bar',data:{labels:ks,datasets:[
+    {label:'PMF Teórica',data:pmf,type:'line',borderColor:'#4d9fff',backgroundColor:'rgba(77,159,255,.08)',fill:true,tension:.35,pointRadius:3,pointBackgroundColor:'#4d9fff',order:1},
+    {label:'Freq. Relativa MC',data:rel,backgroundColor:'rgba(251,146,60,.3)',borderColor:'rgba(251,146,60,.7)',borderWidth:1,order:2}
+  ]},options:dc({scales:{x:{...DC.scales.x,title:{display:true,text:'k (éxitos)',color:'#a5b4ca'}},y:{...DC.scales.y,title:{display:true,text:'Probabilidad',color:'#a5b4ca'}}}})});
+
+  mkChart('c-binom-cdf',{type:'line',data:{labels:ks,datasets:[
+    {label:'CDF Teórica',data:cdf,borderColor:'#9d7dff',backgroundColor:'rgba(157,125,255,.08)',fill:true,tension:.4,pointRadius:2,pointBackgroundColor:'#9d7dff'}
+  ]},options:dc({scales:{x:{...DC.scales.x,title:{display:true,text:'k',color:'#a5b4ca'}},y:{...DC.scales.y,min:0,max:1,title:{display:true,text:'P(X ≤ k)',color:'#a5b4ca'}}}})});
+
+  updateBinomialProb();
+
+  const modeK=freq.indexOf(Math.max(...freq));
+  const p80=ks.find(k=>cdf[k]>=0.8);
+  const skew=(n*(1-p)-p)===0?'simétrica':(p<0.5?'sesgada a la derecha (cola en valores altos)':'sesgada a la izquierda (cola en valores bajos)');
+  fillInterp('ibox-b','#4d9fff','📊','Distribución Binomial — Aprendizaje Operante',[
+    {title:'¿Qué dice la media?',
+     text:`Con ${n} ensayos y p = ${p.toFixed(2)} de refuerzo, se esperan ${hv(fmt(tm,2),'hv-green')} respuestas exitosas por sesión (μ = np). 
+     La simulación reproduce esta media con un error de ${hv(pctErr(sm,tm),'hv-amber')}. 
+     ${tm>=n*0.7?'<strong>Interpretación clínica:</strong> Una probabilidad de refuerzo tan elevada podría indicar un programa de refuerzo continuo, efectivo para adquisición pero vulnerable a extinción rápida.':tm<=n*0.3?'<strong>Interpretación clínica:</strong> Una tasa de refuerzo baja sugiere un programa de razón fija elevada o refuerzo intermitente, más resistente a la extinción.':'<strong>Interpretación clínica:</strong> La tasa de refuerzo moderada representa un equilibrio adecuado entre adquisición conductual y resistencia a la extinción.'}`},
+    {title:'Variabilidad e incertidumbre',
+     text:`La desviación estándar simulada es ${hv(fmt(Math.sqrt(sv),2),'hv-violet')}. Esto significa que en el 68% de las sesiones, el número de respuestas reforzadas se encontrará entre ${hv(Math.max(0,Math.round(tm-Math.sqrt(tv)))+' y '+Math.min(n,Math.round(tm+Math.sqrt(tv))))}. 
+     La distribución es ${skew}, lo cual indica ${p<0.5?'que los valores bajos de respuestas reforzadas son más probables —coherente con un refuerzo poco frecuente—.':p>0.5?'que los valores altos son más frecuentes, indicando alta tasa de refuerzo.':'distribución aproximadamente simétrica alrededor de la media.'}`},
+    {title:'Moda y punto más probable',
+     text:`El número más probable de respuestas reforzadas en una sesión es ${hv(modeK,'hv-green')} (la barra más alta en la gráfica PMF). 
+     La CDF indica que hay un ${hv((cdf[p80]*100).toFixed(0)+'%')} de probabilidad de obtener ${p80} o menos respuestas exitosas en una sesión. 
+     Este umbral puede ser útil para diseñar criterios de línea base en protocolos de modificación de conducta.`},
+    {title:'Validez de la simulación Monte Carlo',
+     text:`La prueba χ²(${df}) = ${hv(fmt(stat,3),'hv-amber')} con p = ${hv(fmt(pv,4), pv>0.05?'hv-green':'hv-rose')} indica que la simulación 
+     <strong>${pv>0.05?'reproduce fielmente la distribución teórica — los datos simulados son consistentes con el modelo binomial —':'muestra discrepancias respecto al modelo teórico — se recomienda aumentar N para reducir el error de muestreo —'}</strong>. 
+     Aumentar N mejora la convergencia según la Ley de los Grandes Números.`}
+  ]);
+}
+
+/* ══════════════════════════════════════════
+   2. BINOMIAL NEGATIVA
+══════════════════════════════════════════ */
+function runNegBinom(){
+  const r=+$('nr').value, p=+$('np').value, N=+$('nN').value;
+  const tm=r*(1-p)/p, tv=r*(1-p)/(p*p);
+  const maxK=Math.ceil(tm+4*Math.sqrt(tv)+5);
+  const ks=Array.from({length:maxK+1},(_,i)=>i);
+  const pmf=ks.map(k=>negBinomPMF(k,r,p));
+  const sim=Array.from({length:N},()=>randNegBinom(r,p));
+  const freq=new Array(maxK+1).fill(0);
+  sim.forEach(v=>{ if(v<=maxK) freq[v]++; });
+  const rel=freq.map(f=>f/N);
+  const sm=mean(sim), sv=variance(sim);
+
+  const poisPmf=ks.map(k=>poisPMF(k,tm));
+
+  fillTable('tbl-nb',[
+    ['Media μ = r(1−p)/p', fmt(tm), fmt(sm), pctErr(sm,tm), errClass(pctErr(sm,tm))],
+    ['Varianza σ² = r(1−p)/p²', fmt(tv), fmt(sv), pctErr(sv,tv), errClass(pctErr(sv,tv))],
+    ['Índice dispersión (σ²/μ)', fmt(tv/tm), fmt(sv/sm), '—', 'rnote'],
+    ['Sobredispersión σ²>μ', tv>tm?'Sí':'No', sv>sm?'Sí':'No', tv>tm?'Confirma modelo':'Revisar p,r', 'rnote']
+  ]);
+
+  mkChart('c-nb-pmf',{type:'bar',data:{labels:ks,datasets:[
+    {label:'PMF Teórica',data:pmf,type:'line',borderColor:'#fb923c',backgroundColor:'rgba(251,146,60,.08)',fill:true,tension:.35,pointRadius:2,pointBackgroundColor:'#fb923c',order:1},
+    {label:'Sim. MC',data:rel,backgroundColor:'rgba(251,146,60,.25)',borderColor:'rgba(251,146,60,.6)',borderWidth:1,order:2}
+  ]},options:dc({scales:{x:{...DC.scales.x,title:{display:true,text:'k (fracasos)',color:'#a5b4ca'}},y:{...DC.scales.y,title:{display:true,text:'P(X=k)',color:'#a5b4ca'}}}})});
+
+  mkChart('c-nb-vs',{type:'line',data:{labels:ks,datasets:[
+    {label:`BinNeg(r=${r},p=${p})`,data:pmf,borderColor:'#fb923c',backgroundColor:'rgba(251,146,60,.05)',fill:true,tension:.35,pointRadius:2},
+    {label:`Poisson(λ=${fmt(tm,2)})`,data:poisPmf,borderColor:'#22d3ee',backgroundColor:'rgba(34,211,238,.05)',fill:true,tension:.35,pointRadius:2,borderDash:[5,3]}
+  ]},options:dc({scales:{x:{...DC.scales.x,title:{display:true,text:'k',color:'#a5b4ca'}},y:{...DC.scales.y,title:{display:true,text:'Probabilidad',color:'#a5b4ca'}}}})});
+
+  const dispIndex=tv/tm;
+  const sobredisp=dispIndex>1.2;
+  fillInterp('ibox-nb','#fb923c','🔁','Binomial Negativa — Fracasos antes de r Éxitos',[
+    {title:'¿Qué modela esta distribución?',
+     text:`Con r = ${hv(r)} éxitos requeridos y p = ${hv(p.toFixed(2))} de probabilidad de éxito en cada intento, se esperan en promedio ${hv(fmt(tm,2),'hv-amber')} fracasos antes de alcanzar el objetivo. 
+     <strong>Ejemplo clínico:</strong> si p representa la probabilidad de que una sesión produzca un avance conductual, este modelo estima cuántas sesiones sin avance habrá antes de acumular ${r} avances documentados.`},
+    {title:'Sobredispersión: la clave diferencial',
+     text:`El índice de dispersión (σ²/μ) teórico es ${hv(fmt(dispIndex,3), dispIndex>1.5?'hv-rose':'hv-amber')}, y el simulado es ${hv(fmt(sv/sm,3),'hv-violet')}. 
+     ${sobredisp?`<strong>Sobredispersión confirmada (ID > 1):</strong> la varianza supera la media, lo que significa que los fracasos ocurren en <em>ráfagas</em> —periodos de estancamiento seguidos de avances—. 
+     Esto es común en procesos terapéuticos reales donde el progreso no es uniforme. En este escenario, <strong>Poisson subestimaría la variabilidad real</strong>.`:
+     `El índice de dispersión es próximo a 1, sugiriendo que Poisson podría ser un modelo igualmente válido para este conjunto de parámetros. Aumenta r o reduce p para ver sobredispersión marcada.`}`},
+    {title:'Comparación con Poisson (misma media)',
+     text:`La gráfica derecha muestra la Binomial Negativa versus Poisson(λ = ${fmt(tm,2)}). 
+     ${sobredisp?`La Binomial Negativa presenta ${hv('colas más pesadas','hv-rose')}: hay mayor probabilidad de ver un número elevado de fracasos que lo que Poisson predice. 
+     En evaluación clínica, ignorar esta diferencia llevaría a <strong>subestimar el riesgo de períodos prolongados sin progreso</strong>.`:
+     `Con estos parámetros, ambas distribuciones son similares. La diferencia se vuelve sustancial cuando r es pequeño o p es bajo.`}`},
+    {title:'Aplicación práctica',
+     text:`Este modelo es preferible a Poisson cuando los datos clínicos muestran que la varianza de eventos (recaídas, sesiones sin logro, conductas problema) es ${hv('mayor','hv-rose')} que la media. 
+     Para verificarlo en datos reales, calcula el índice de dispersión empírico: si ID > 1 de forma consistente, la Binomial Negativa es el modelo más apropiado. 
+     Un valor de ${hv('ID ≈ '+fmt(sv/sm,2), sv/sm>1.1?'hv-rose':'hv-green')} en esta simulación ${sv/sm>1.1?'confirma':'no supone evidencia clara de'} sobredispersión.`}
+  ]);
+}
+
+/* ══════════════════════════════════════════
+   3. MULTINOMIAL (MEJORADO - 5 ESTADOS)
+══════════════════════════════════════════ */
+function updateMultiProbs(changed){
+  const ids=['mp1','mp2','mp3','mp4','mp5'];
+  let vals=ids.map(id=>{
+    let v = +$(id).value;
+    if (v < 0) v = 0;
+    if (v > 100) v = 100;
+    $(id).value = v;
+    return v;
+  });
+  
+  const sum=vals.reduce((a,b)=>a+b,0);
+  const sumEl=$('msum'), sumVal=$('msum-val');
+  const errorEl=$('m-error');
+  
+  sumVal.textContent=sum.toFixed(0);
+  const ok=Math.abs(sum-100)<0.1;
+  sumEl.className='sum-display '+(ok?'sum-ok':'sum-bad');
+  sumEl.innerHTML=(ok?'✓ ':'⚠ ')+'Σp = <span id="msum-val">'+sum.toFixed(0)+'</span>%';
+  
+  if (!ok) {
+    errorEl.style.display = 'block';
+  } else {
+    errorEl.style.display = 'none';
+  }
+}
+
+function mnrnd1(n,ps){
+  const cdf=ps.reduce((a,v,i)=>{a.push((a[i-1]||0)+v);return a;},[]);
+  const cnt=new Array(ps.length).fill(0);
+  for(let i=0;i<n;i++){
+    const u=randU(); let j=0;
+    while(j<cdf.length-1&&u>cdf[j]) j++;
+    cnt[j]++;
+  }
+  return cnt;
+}
+
+function runMultinomial(){
+  const n=+$('mn').value;
+  const p1=+$('mp1').value, p2=+$('mp2').value, p3=+$('mp3').value;
+  const p4=+$('mp4').value, p5=+$('mp5').value;
+  
+  const total=p1+p2+p3+p4+p5;
+  
+  if (Math.abs(total - 100) > 0.1) {
+    alert('Las probabilidades deben sumar 100%. Suma actual: ' + total + '%');
+    return;
+  }
+  
+  const ps=[p1/total,p2/total,p3/total,p4/total,p5/total];
+  const N=+$('mN').value;
+  const labels=['Estado 1','Estado 2','Estado 3','Estado 4','Estado 5'];
+  const colors=['rgba(34,197,94,.45)','rgba(244,63,94,.45)','rgba(157,125,255,.45)','rgba(245,158,11,.45)','rgba(34,211,238,.45)'];
+  const bc=['#22c55e','#f43f5e','#9d7dff','#f59e0b','#22d3ee'];
+
+  const sims=Array.from({length:N},()=>mnrnd1(n,ps));
+  const S=[sims.map(r=>r[0]),sims.map(r=>r[1]),sims.map(r=>r[2]),sims.map(r=>r[3]),sims.map(r=>r[4])];
+  const teoMu=ps.map(p=>n*p);
+  
+  const covs=[];
+  for(let i=0;i<5;i++){
+    for(let j=i+1;j<5;j++){
+      covs.push({i,j,val:-n*ps[i]*ps[j]});
+    }
+  }
+  
+  const corrs=[];
+  for(let i=0;i<5;i++){
+    for(let j=i+1;j<5;j++){
+      corrs.push({i,j,val:pearsonR(S[i],S[j])});
+    }
+  }
+
+  $('tbl-m').innerHTML=labels.map((l,i)=>`
+    <tr>
+      <td class="rlabel"><span style="color:${bc[i]}">■</span> ${l}</td>
+      <td class="rteo">${fmt(teoMu[i],3)}</td>
+      <td class="rsim">${fmt(mean(S[i]),4)}</td>
+      <td class="rnote">σ²=${fmt(n*ps[i]*(1-ps[i]),2)}</td>
+    </tr>`).join('');
+
+  $('tbl-corr-wrap').style.display='block';
+  $('tbl-corr').innerHTML=covs.map((c,idx)=>`
+    <tr>
+      <td class="rlabel">${labels[c.i]}–${labels[c.j]}</td>
+      <td class="rsim">${fmt(corrs[idx].val,4)}</td>
+      <td class="rteo">${fmt(c.val,3)}</td>
+      <td class="rnote">Cov negativa forzada</td>
+    </tr>`).join('');
+
+  const bins=Array.from({length:n+1},(_,i)=>i);
+  function mf(arr){ const f=new Array(n+1).fill(0); arr.forEach(v=>f[v]++); return f.map(x=>x/N); }
+  mkChart('c-m-marg',{type:'bar',data:{labels:bins,datasets:labels.map((l,i)=>({
+    label:l,data:mf(S[i]),backgroundColor:colors[i],borderColor:bc[i],borderWidth:1
+  }))},options:dc({scales:{x:{...DC.scales.x,title:{display:true,text:'Conteo diario',color:'#a5b4ca'}},y:{...DC.scales.y,title:{display:true,text:'Probabilidad relativa',color:'#a5b4ca'}}}})});
+
+  const pts=S[0].slice(0,400).map((v,i)=>({x:v+(randU()-.5)*.35,y:S[1][i]+(randU()-.5)*.35}));
+  mkChart('c-m-scat',{type:'scatter',data:{datasets:[{
+    label:`r = ${fmt(corrs[0].val,3)}`,data:pts,
+    backgroundColor:'rgba(77,159,255,.3)',pointRadius:3,pointHoverRadius:5
+  }]},options:dc({scales:{x:{...DC.scales.x,title:{display:true,text:'Estado 1',color:'#a5b4ca'}},y:{...DC.scales.y,title:{display:true,text:'Estado 2',color:'#a5b4ca'}}}})});
+
+  const dominante=teoMu.indexOf(Math.max(...teoMu));
+  const domLabel=labels[dominante];
+  const domPct=(ps[dominante]*100).toFixed(0);
+  fillInterp('ibox-m','#f43f5e','🎭','Distribución Multinomial — 5 Estados Emocionales',[
+    {title:'Perfil emocional esperado',
+     text:`Con las probabilidades configuradas (${p1}%, ${p2}%, ${p3}%, ${p4}%, ${p5}%), en un día típico de ${n} eventos evaluables, el estado dominante es ${hv(domLabel,'hv-green')} 
+     (${hv(domPct+'%')} de los eventos, media esperada: ${hv(fmt(teoMu[dominante],2))} eventos/día). 
+     <strong>Uso clínico:</strong> este perfil puede representar la distribución basal de estados de ánimo en un registro de automonitoreo o ESM (Experience Sampling Method) con 5 categorías diferenciadas.`},
+    {title:'La correlación negativa: un artefacto algebraico',
+     text:`Todas las correlaciones entre pares de estados son negativas (ej: Estado 1–Estado 2: ${hv(fmt(corrs[0].val,3),'hv-rose')}). 
+     <strong>Advertencia metodológica:</strong> estas correlaciones son una consecuencia matemática forzada de la restricción Σk = n (suma constante), 
+     no un reflejo causal de que "más emociones de un tipo causan menos de otro". 
+     Reportar estas correlaciones como hallazgos empíricos sería un error analítico.`},
+    {title:'Variabilidad entre días y covarianzas',
+     text:`La matriz de covarianzas teórica muestra valores negativos entre todos los pares (ej: Cov(1,2) = ${hv(fmt(covs[0].val,3),'hv-violet')}), 
+     reflejando que un aumento en un estado necesariamente reduce los otros dado el total fijo de eventos. 
+     La varianza marginal para ${labels[0]} es ${hv(fmt(n*ps[0]*(1-ps[0]),3),'hv-amber')}, mostrando la variabilidad esperada día a día.`},
+    {title:'Consideraciones para aplicación clínica',
+     text:`Este modelo asume independencia entre eventos del mismo día y probabilidades estables. 
+     En contextos reales, el estado emocional en t influye en t+1 (autocorrelación temporal). 
+     Si tus datos muestran dependencia temporal, considera modelos de <strong>cadenas de Markov</strong> o <strong>Dirichlet-multinomial</strong> para mayor flexibilidad.`}
+  ]);
+}
+
+/* ══════════════════════════════════════════
+   4. HIPERGEOMÉTRICA
+══════════════════════════════════════════ */
+function clampHyper(){
+  const N=+$('hN').value, K=+$('hK').value, n=+$('hn').value;
+  const $hK=$('hK'), $hn=$('hn');
+  if(K>N){ $hK.value=N; $('cv-hK').textContent=N; }
+  if(n>N){ $hn.value=N; $('cv-hn').textContent=N; }
+  const ok=(+$('hK').value<=N)&&(+$('hn').value<=N);
+  const d=$('hcheck');
+  d.className='sum-display '+(ok?'sum-ok':'sum-bad');
+  d.textContent=ok?'✓ Parámetros válidos: K ≤ N, n ≤ N':'⚠ Ajusta: K ≤ N y n ≤ N';
+}
+
+function runHyper(){
+  const N=+$('hN').value, K=+$('hK').value, n=+$('hn').value, S=+$('hS').value;
+  if(K>N||n>N){ alert('K y n deben ser ≤ N'); return; }
+
+  const kmin=Math.max(0,n+K-N), kmax=Math.min(n,K);
+  const ks=Array.from({length:kmax-kmin+1},(_,i)=>kmin+i);
+  const pmf=ks.map(k=>hyperPMF(k,N,K,n));
+  const sim=Array.from({length:S},()=>randHyper(N,K,n));
+  const freq=new Array(ks.length).fill(0);
+  sim.forEach(v=>{ const idx=v-kmin; if(idx>=0&&idx<freq.length) freq[idx]++; });
+  const rel=freq.map(f=>f/S);
+  const sm=mean(sim), sv=variance(sim);
+  const p=K/N;
+  const tm=n*p, tv=n*p*(1-p)*(N-n)/(N-1);
+  const binPmf=ks.map(k=>binomPMF(k,n,p));
+
+  fillTable('tbl-h',[
+    ['Media μ = nK/N', fmt(tm), fmt(sm), pctErr(sm,tm), errClass(pctErr(sm,tm))],
+    ['Varianza σ² (con correc.)', fmt(tv), fmt(sv), pctErr(sv,tv), errClass(pctErr(sv,tv))],
+    ['Factor corrección (N−n)/(N−1)', fmt((N-n)/(N-1)), '—', 'Reduce var vs Binomial', 'rnote'],
+    ['Equiv. Binomial(n,K/N) media', fmt(n*p), '—', 'Sin correc. pop. finita', 'rnote']
+  ]);
+
+  mkChart('c-h-pmf',{type:'bar',data:{labels:ks,datasets:[
+    {label:'PMF Teórica',data:pmf,type:'line',borderColor:'#22d3ee',backgroundColor:'rgba(34,211,238,.08)',fill:true,tension:.35,pointRadius:2,pointBackgroundColor:'#22d3ee',order:1},
+    {label:'Sim. MC',data:rel,backgroundColor:'rgba(34,211,238,.25)',borderColor:'rgba(34,211,238,.6)',borderWidth:1,order:2}
+  ]},options:dc({scales:{x:{...DC.scales.x,title:{display:true,text:'k (éxitos en muestra)',color:'#a5b4ca'}},y:{...DC.scales.y,title:{display:true,text:'Probabilidad',color:'#a5b4ca'}}}})});
+
+  mkChart('c-h-vs',{type:'line',data:{labels:ks,datasets:[
+    {label:`Hipergeom(${N},${K},${n})`,data:pmf,borderColor:'#22d3ee',fill:false,tension:.35,pointRadius:2},
+    {label:`Binomial(${n},${p.toFixed(2)})`,data:binPmf,borderColor:'#f59e0b',fill:false,tension:.35,pointRadius:2,borderDash:[5,3]}
+  ]},options:dc({scales:{x:{...DC.scales.x,title:{display:true,text:'k',color:'#a5b4ca'}},y:{...DC.scales.y,title:{display:true,text:'Probabilidad',color:'#a5b4ca'}}}})});
+
+  const fpc=(N-n)/(N-1);
+  const binVar=n*p*(1-p);
+  const redVar=(1-fpc)*100;
+  const convergence=n/N<0.1;
+  fillInterp('ibox-h','#22d3ee','🎲','Hipergeométrica — Muestreo sin Reemplazo',[
+    {title:'¿Qué nos dice este resultado?',
+     text:`De una población de ${hv(N)} individuos donde ${hv(K,'hv-rose')} tienen el diagnóstico o característica de interés (${hv((p*100).toFixed(1)+'%')}), 
+     al seleccionar ${hv(n,'hv-green')} sin reemplazo se esperan encontrar ${hv(fmt(tm,2),'hv-green')} casos positivos en la muestra (media simulada: ${hv(fmt(sm,4))}). 
+     <strong>Ejemplo clínico:</strong> si N=50 pacientes en lista de espera, K=20 con ansiedad severa, y se seleccionan n=10 para un grupo piloto, 
+     se esperan encontrar ${hv(fmt(tm,2),'hv-green')} pacientes con ansiedad severa en el grupo.`},
+    {title:'El factor de corrección de población finita',
+     text:`La varianza hipergeométrica incorpora el factor ${hv('(N−n)/(N−1) = '+fmt(fpc,4),'hv-amber')}, que reduce la varianza respecto al caso binomial en un ${hv(fmt(redVar,1)+'%','hv-rose')}. 
+     <strong>Interpretación:</strong> al muestrear sin reemplazo, ya no es posible obtener el mismo individuo dos veces, 
+     lo que reduce la incertidumbre. Cuanto mayor sea la fracción de muestreo n/N = ${hv((n/N*100).toFixed(1)+'%')}, 
+     más importante es usar la hipergeométrica en lugar de la binomial.`},
+    {title:'¿Cuándo puedes usar Binomial como aproximación?',
+     text:`La regla práctica es que la binomial aproxima bien a la hipergeométrica cuando la fracción de muestreo n/N ${convergence?`es pequeña. En este caso, n/N = ${hv((n/N*100).toFixed(1)+'%','hv-green')} < 10%, 
+     por lo que ${hv('la Binomial es una aproximación válida','hv-green')} y la diferencia entre ambas distribuciones es mínima (visible en la gráfica comparativa).`:
+     `supera el 10%. Aquí n/N = ${hv((n/N*100).toFixed(1)+'%','hv-rose')} ≥ 10%, por lo que ${hv('la Binomial sobreestima la varianza','hv-rose')} y la Hipergeométrica es el modelo correcto. 
+     Ignorar este detalle puede llevar a intervalos de confianza demasiado amplios en estudios clínicos con muestras grandes relativas a la población.`}`},
+    {title:'Aplicación en selección de muestras clínicas',
+     text:`Este modelo es especialmente relevante en: (1) <strong>selección aleatoria de pacientes</strong> para ensayos clínicos desde una lista cerrada; 
+     (2) <strong>auditorías de expedientes</strong> donde se revisa una muestra de los registros totales; 
+     (3) <strong>evaluación de prevalencia</strong> en grupos pequeños (escuelas, consultorios). 
+     La probabilidad de obtener ${kmax} o más casos positivos en la muestra es ${hv((pmf.slice(pmf.length-1).reduce((a,v)=>a+v,0)*100).toFixed(2)+'%','hv-violet')}, lo que ayuda a evaluar si una muestra observada es inusualmente alta.`}
+  ]);
+}
+
+/* ══════════════════════════════════════════
+   5. POISSON (MEJORADO - CON CALCULO POR INTERVALO)
+══════════════════════════════════════════ */
+function poissonChart(cid, lam, nsim){
+  const maxK=Math.max(12,Math.ceil(lam*4));
+  const ks=Array.from({length:maxK+1},(_,i)=>i);
+  const pmf=ks.map(k=>poisPMF(k,lam));
+  const sim=Array.from({length:nsim},()=>randPoisson(lam));
+  const freq=new Array(maxK+1).fill(0);
+  sim.forEach(v=>{ if(v<=maxK) freq[v]++; });
+  const rel=freq.map(f=>f/nsim);
+  const sm=mean(sim), sv=variance(sim);
+  mkChart(cid,{type:'bar',data:{labels:ks,datasets:[
+    {label:'PMF Teórica',data:pmf,type:'line',borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,.08)',fill:true,tension:.35,pointRadius:2,pointBackgroundColor:'#f59e0b',order:1},
+    {label:'Sim. MC',data:rel,backgroundColor:'rgba(245,158,11,.25)',borderColor:'rgba(245,158,11,.6)',borderWidth:1,order:2}
+  ]},options:dc({scales:{x:{...DC.scales.x,title:{display:true,text:`k  |  λ=${lam}, N=${nsim}`,color:'#a5b4ca'}},y:{...DC.scales.y,title:{display:true,text:'P(X=k)',color:'#a5b4ca'}}}})});
+  return {sm,sv};
+}
+
+function runPoisson(){
+  const lam=+$('pl').value, N=+$('pN').value;
+  const {sm,sv}=poissonChart('c-p-pmf',lam,N);
+  
+  // Actualizar cálculo del intervalo
+  updatePoissonIntervalCalc();
+  
+  const disp=sv/sm;
+  const dispOk=Math.abs(disp-1)<0.15;
+  
+  // Crear interpretación detallada para la tabla
+  fillTable('tbl-p',[
+    ['Media (λ)', 
+     fmt(lam), 
+     fmt(sm), 
+     pctErr(sm,lam), 
+     errClass(pctErr(sm,lam))],
+     
+    ['Varianza (λ)', 
+     fmt(lam), 
+     fmt(sv), 
+     pctErr(sv,lam), 
+     errClass(pctErr(sv,lam))],
+     
+    ['Índice dispersión (Var/μ)', 
+     '1.0000', 
+     fmt(disp,4), 
+     dispOk ? 'Equidispersión ✓' : 'Revisar modelo ⚠', 
+     dispOk ? 'rok' : 'rwarn'],
+     
+    ['Interpretación', 
+     '—', 
+     '—', 
+     dispOk ? 'Poisson válido' : 'Considerar Bin. Negativa', 
+     'rnote']
+  ]);
+
+  const probCero=Math.exp(-lam);
+  const probDosOmas=1-poisPMF(0,lam)-poisPMF(1,lam);
+  
+  const nInt = +$('p-int-n').value;
+  const kInt = +$('p-int-k').value;
+  const lambdaEff = lam * nInt;
+  
+  fillInterp('ibox-p','#f59e0b','⚡','Distribución de Poisson — Eventos en Intervalos de Tiempo',[
+    {title:'Interpretación de la tasa λ y escalamiento temporal',
+     text:`Con λ = ${hv(lam.toFixed(1),'hv-amber')} eventos por unidad de tiempo, en un intervalo de ${hv(nInt.toFixed(1),'hv-violet')} unidades, 
+     la tasa efectiva es λ<sub>eff</sub> = ${hv(lambdaEff.toFixed(1),'hv-green')}. 
+     La probabilidad de observar exactamente ${kInt} eventos en este intervalo es ${hv($('p-int-prob').textContent,'hv-amber')}. 
+     <strong>Propiedad clave:</strong> si X₁ ~ Poisson(λ) en tiempo 1, entonces X<sub>n</sub> ~ Poisson(λ·n) en tiempo n.`},
+    {title:'Probabilidades en el intervalo seleccionado',
+     text:`Para el intervalo especificado (n = ${nInt}):<br>
+     • P(K = ${kInt}) = ${hv($('p-int-prob').textContent,'hv-amber')} (probabilidad puntual)<br>
+     • P(K ≤ ${kInt}) = ${hv($('p-int-cum').textContent,'hv-green')} (probabilidad acumulada)<br>
+     • P(K > ${kInt}) = ${hv($('p-int-exc').textContent,'hv-rose')} (probabilidad de excedencia)<br>
+     <strong>Uso clínico:</strong> si λ representa recaídas mensuales y n=3 meses, puedes calcular la probabilidad de exactamente K recaídas en el trimestre.`},
+    {title:'Validación de la propiedad de equidispersión',
+     text:`El índice de dispersión simulado es ${hv(fmt(disp,4), dispOk?'hv-green':'hv-rose')} (debería ser ≈ 1 para Poisson). 
+     ${dispOk?`<strong>Compatibilidad Monte Carlo:</strong> la varianza simulada es consistente con la media, como se espera de muestras generadas bajo este modelo; no valida su ajuste a datos reales.`:
+     `<strong>Variación Monte Carlo:</strong> la varianza supera a la media. En datos reales, esto sugeriría que Poisson no ajusta bien y deberías considerar la <strong>Binomial Negativa</strong>.`}`},
+    {title:'Relación Poisson–Exponencial',
+     text:`Si los eventos siguen un proceso de Poisson(λ = ${lam.toFixed(1)}), entonces el <strong>tiempo entre eventos</strong> sigue una distribución Exponencial(λ = ${lam.toFixed(1)}), 
+     con tiempo medio entre eventos de ${hv(fmt(1/lam,2),'hv-green')} unidades de tiempo. 
+     Esta dualidad es fundamental en análisis de supervivencia y modelos de tiempo hasta el evento en psicología clínica.`}
+  ]);
+}
+
+/* ══════════════════════════════════════════
+   6. EXPONENCIAL
+══════════════════════════════════════════ */
+function runExpo(){
+  const lam=+$('el').value, N=+$('eN').value, B=+$('eB').value;
+  const sim=Array.from({length:N},()=>randExpo(lam));
+  const sm=mean(sim), sv=variance(sim);
+  const teoMu=1/lam, teoVar=1/(lam*lam), teoMed=Math.log(2)/lam;
+  const simMed=[...sim].sort((a,b)=>a-b)[Math.floor(N/2)];
+
+  const sub=sim.filter(v=>v>simMed).map(v=>v-simMed);
+  const memMean=mean(sub);
+
+  fillTable('tbl-e',[
+    ['Media μ = 1/λ', fmt(teoMu), fmt(sm), pctErr(sm,teoMu), errClass(pctErr(sm,teoMu))],
+    ['Varianza σ² = 1/λ²', fmt(teoVar), fmt(sv), pctErr(sv,teoVar), errClass(pctErr(sv,teoVar))],
+    ['Mediana = ln(2)/λ', fmt(teoMed), fmt(simMed), pctErr(simMed,teoMed), errClass(pctErr(simMed,teoMed))],
+    ['Falta de memoria: E[X−t|X>t]', fmt(teoMu), fmt(memMean), '≈ μ confirma propiedad', memMean>teoMu*.7&&memMean<teoMu*1.3?'rok':'rwarn'],
+    ['CV (σ/μ) ≡ 1 para Expo', '1.0000', fmt(Math.sqrt(sv)/sm), 'Debe ser ≈ 1', Math.abs(Math.sqrt(sv)/sm-1)<.1?'rok':'rwarn']
+  ]);
+
+  const maxX=Math.min(sm+5*Math.sqrt(sv), Math.max(...sim)*0.98);
+  const binW=maxX/B;
+  const bins=Array.from({length:B},(_,i)=>i*binW);
+  const hist=new Array(B).fill(0);
+  sim.forEach(v=>{ const idx=Math.floor(v/binW); if(idx<B) hist[idx]++; });
+  const histDens=hist.map(h=>h/(N*binW));
+  const pdfX=Array.from({length:120},(_,i)=>i*maxX/119);
+  const pdfY=pdfX.map(x=>expoPDF(x,lam));
+
+  mkChart('c-e-pdf',{type:'bar',data:{labels:bins.map(b=>b.toFixed(2)),datasets:[
+    {label:'PDF Teórica',data:pdfX.map((x,i)=>({x,y:pdfY[i]})),type:'line',borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.08)',fill:true,tension:.4,pointRadius:0,order:1,parsing:{xAxisKey:'x',yAxisKey:'y'}},
+    {label:'Histograma simulado',data:histDens,backgroundColor:'rgba(34,197,94,.3)',borderColor:'rgba(34,197,94,.6)',borderWidth:1,order:2}
+  ]},options:dc({scales:{x:{...DC.scales.x,title:{display:true,text:'t (tiempo)',color:'#a5b4ca'}},y:{...DC.scales.y,title:{display:true,text:'Densidad',color:'#a5b4ca'}}}})});
+
+  const survX=Array.from({length:100},(_,i)=>i*maxX/99);
+  const survY=survX.map(x=>expoSurv(x,lam));
+  const survEmp=survX.map(x=>sim.filter(v=>v>x).length/N);
+  mkChart('c-e-surv',{type:'line',data:{labels:survX.map(x=>x.toFixed(2)),datasets:[
+    {label:'S(t) Teórica = e^{−λt}',data:survY,borderColor:'#22c55e',fill:false,tension:.4,pointRadius:0,borderWidth:2},
+    {label:'S(t) Empírica',data:survEmp,borderColor:'#22d3ee',fill:false,tension:.3,pointRadius:0,borderDash:[4,3],borderWidth:1.5}
+  ]},options:dc({scales:{x:{...DC.scales.x,title:{display:true,text:'t',color:'#a5b4ca'}},y:{...DC.scales.y,min:0,max:1,title:{display:true,text:'P(X > t)',color:'#a5b4ca'}}}})});
+
+  const memOk=memMean>teoMu*0.75&&memMean<teoMu*1.25;
+  const cvOk=Math.abs(Math.sqrt(sv)/sm-1)<0.1;
+  fillInterp('ibox-e','#22c55e','📉','Distribución Exponencial — Tiempo entre Eventos',[
+    {title:'Lectura del tiempo medio entre eventos',
+     text:`Con λ = ${hv(lam.toFixed(1),'hv-amber')}, el tiempo medio entre eventos consecutivos (recaídas, síntomas, consultas) es ${hv(fmt(teoMu,3),'hv-green')} unidades de tiempo. 
+     La mediana —el tiempo que el 50% de los individuos no supera— es más corta: ${hv(fmt(teoMed,3),'hv-violet')} unidades, 
+     ya que la distribución está sesgada a la derecha. 
+     <strong>Implicación clínica:</strong> la mitad de los pacientes experimentará el evento antes de t = ${fmt(teoMed,2)}, 
+     pero una fracción relevante (${hv((Math.exp(-lam*teoMu*2)*100).toFixed(1)+'%','hv-rose')}) tardará más del doble del tiempo medio.`},
+    {title:'La propiedad de falta de memoria',
+     text:`La falta de memoria es la característica más importante y contraintuitiva de esta distribución: 
+     <strong>el tiempo transcurrido sin evento no influye en la probabilidad de evento futuro</strong>. 
+     El test empírico muestra que la media del tiempo residual (condicionada a haber superado la mediana) es ${hv(fmt(memMean,4), memOk?'hv-green':'hv-rose')}, 
+     ${memOk?`muy próxima a la media global ${hv(fmt(teoMu,4),'hv-green')} — <strong>propiedad de falta de memoria verificada</strong>.`:
+     `con cierta divergencia respecto a μ = ${fmt(teoMu,4)} — puede deberse al tamaño muestral. Aumenta N para convergencia.`} 
+     <strong>Limitación clínica:</strong> en recaídas reales, el riesgo suele aumentar con el tiempo (hazard creciente), lo que haría más apropiado un modelo de Weibull.`},
+    {title:'Función de supervivencia S(t)',
+     text:`La curva S(t) = e^{−λt} representa la probabilidad de que el evento aún no haya ocurrido hasta el tiempo t. 
+     Valores concretos: S(${fmt(teoMed,2)}) = 0.50 (mediana), S(${fmt(teoMu,2)}) = ${hv(fmt(Math.exp(-1),3),'hv-amber')} ≈ 36.8%, S(${fmt(2/lam,2)}) = ${hv(fmt(Math.exp(-2),3),'hv-rose')} ≈ 13.5%. 
+     La curva empírica (línea punteada) debería solapar la teórica si el modelo es correcto. 
+     <strong>Aplicación:</strong> en seguimiento post-alta, esta curva estima qué proporción de pacientes permanece sin recaída a cada punto temporal.`},
+    {title:'¿Cuándo NO usar la distribución exponencial?',
+     text:`El CV (coeficiente de variación = σ/μ) simulado es ${hv(fmt(Math.sqrt(sv)/sm,4), cvOk?'hv-green':'hv-rose')} — debería ser ≈ 1. 
+     ${cvOk?'✓ Compatible con el modelo exponencial.':'⚠ Desviación del valor esperado — sugiere que los datos no siguen exactamente una distribución exponencial.'} 
+     Si en datos reales el hazard no es constante —es decir, el riesgo de recaída <em>aumenta</em> con el tiempo de abstinencia o <em>disminuye</em> con el tiempo en terapia— 
+     la distribución exponencial no es apropiada. Alternativas: <strong>Weibull</strong> (hazard potencial), <strong>Gompertz</strong> (hazard exponencialmente creciente), o modelos no paramétricos (Kaplan-Meier).`}
+  ]);
+}
+
+/* ══════════════════════════════════════════
+   7. PASEO ALEATORIO
+══════════════════════════════════════════ */
+function runWalk(){
+  const T=+$('wT').value, p=+$('wP').value, M=+$('wM').value;
+
+  const walks=[];
+  for(let m=0;m<M;m++){
+    const w=[0];
+    for(let t=0;t<T;t++) w.push(w[t]+(randU()<p?1:-1));
+    walks.push(w);
+  }
+
+  const days=Array.from({length:T+1},(_,i)=>i);
+  const meanPath=days.map(d=>mean(walks.map(w=>w[d])));
+  const stdPath =days.map(d=>{ const v=walks.map(w=>w[d]); return Math.sqrt(variance(v)); });
+  const quantile=(xs,q)=>{const a=[...xs].sort((x,y)=>x-y),u=(a.length-1)*q,lo=Math.floor(u);return a[lo]+(a[Math.ceil(u)]-a[lo])*(u-lo);};
+  const icSup=days.map(d=>quantile(walks.map(w=>w[d]),.975));
+  const icInf=days.map(d=>quantile(walks.map(w=>w[d]),.025));
+
+  const teoMu  =T*(2*p-1);
+  const teoVar =4*p*(1-p)*T;
+  const finals =walks.map(w=>w[T]);
+  const simMu  =mean(finals), simVar=variance(finals);
+
+  fillTable('tbl-w',[
+    ['Media final E[X_T] = T(2p−1)', fmt(teoMu), fmt(simMu), Math.abs(teoMu)<1e-12?'Error absoluto: '+fmt(Math.abs(simMu)):pctErr(simMu,teoMu),Math.abs(teoMu)<1e-12?'rnote':errClass(pctErr(simMu,teoMu))],
+    ['Varianza final = 4p(1−p)T', fmt(teoVar), fmt(simVar), pctErr(simVar,teoVar), errClass(pctErr(simVar,teoVar))],
+    ['Desv. Est. final = √(4p(1−p)T)', fmt(Math.sqrt(teoVar)), fmt(Math.sqrt(simVar)), '≈ radio de difusión', 'rnote'],
+    ['Drift diario 2p−1', fmt(2*p-1), fmt(simMu/T), p===0.5?'Martingala (sin drift)':p>0.5?'↑ Drift positivo':'↓ Drift negativo', 'rnote']
+  ]);
+
+  const dsEnsemble=[];
+  const nShow=Math.min(50,M);
+  for(let i=0;i<nShow;i++){
+    dsEnsemble.push({
+      label: i===0 ? 'Trayectorias' : '',
+      data: walks[i],
+      borderColor:'rgba(120,130,160,0.12)',
+      borderWidth:1,
+      pointRadius:0,
+      fill:false,
+      tension:0
+    });
+  }
+  dsEnsemble.push({
+    label:'Banda central 95%',
+    data:icSup,
+    borderColor:'rgba(77,159,255,.4)',
+    backgroundColor:'rgba(77,159,255,.08)',
+    borderWidth:1,
+    borderDash:[4,3],
+    pointRadius:0,
+    fill:'+1',
+    tension:.3
+  });
+  dsEnsemble.push({
+    label:'',
+    data:icInf,
+    borderColor:'rgba(77,159,255,.4)',
+    borderWidth:1,
+    borderDash:[4,3],
+    pointRadius:0,
+    fill:false,
+    tension:.3
+  });
+  dsEnsemble.push({
+    label:'Media ensemble',
+    data:meanPath,
+    borderColor:'#4d9fff',
+    borderWidth:2.5,
+    pointRadius:0,
+    fill:false,
+    tension:.3
+  });
+
+  mkChart('c-w-ens',{
+    type:'line',
+    data:{labels:days, datasets:dsEnsemble},
+    options:{
+      animation:{duration:300},
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{
+          labels:{
+            color:'#7a8ba8',
+            font:{family:'JetBrains Mono',size:10},
+            filter: function(item){
+              return item && item.text && item.text !== '' && item.text !== 'undefined';
+            }
+          }
+        },
+        tooltip:{
+          backgroundColor:'#1c2436',borderColor:'#2e3a52',borderWidth:1,
+          titleColor:'#f0f4ff',bodyColor:'#7a8ba8',
+          titleFont:{family:'JetBrains Mono'},bodyFont:{family:'JetBrains Mono',size:11}
+        }
+      },
+      scales:{
+        x:{ticks:{color:'#a5b4ca',font:{family:'JetBrains Mono',size:10}},
+           grid:{color:'rgba(37,46,66,.4)'},
+           title:{display:true,text:'Día',color:'#a5b4ca'}},
+        y:{ticks:{color:'#a5b4ca',font:{family:'JetBrains Mono',size:10}},
+           grid:{color:'rgba(37,46,66,.4)'},
+           title:{display:true,text:'Nivel de humor',color:'#a5b4ca'}}
+      }
+    }
+  });
+
+  const mu=teoMu, sig=Math.sqrt(Math.max(teoVar,0.01));
+  const allFinals=walks.map(w=>w[T]);
+  const minF=Math.min(...allFinals), maxF=Math.max(...allFinals);
+  const range=maxF-minF||1;
+  const binW=Math.max(1,Math.ceil(range/30));
+  const binStart=minF-binW;
+  const nBins=Math.ceil((maxF-binStart)/binW)+2;
+  const histBins=Array.from({length:nBins},(_,i)=>binStart+i*binW);
+  const histFreq=new Array(nBins).fill(0);
+  allFinals.forEach(v=>{ const idx=Math.floor((v-binStart)/binW); if(idx>=0&&idx<nBins) histFreq[idx]++; });
+  const histRel=histFreq.map(h=>h/(M*binW));
+  const normXarr=Array.from({length:100},(_,i)=>minF-sig+i*(range+2*sig)/99);
+  const normYarr=normXarr.map(x=>normPDF(x,mu,sig));
+
+  mkChart('c-w-dist',{
+    type:'bar',
+    data:{labels:histBins.map(b=>b.toFixed(0)),datasets:[
+      {label:'Distribución simulada',data:histRel.map((y,i)=>({x:histBins[i]+binW/2,y})),backgroundColor:'rgba(157,125,255,.35)',borderColor:'rgba(157,125,255,.7)',borderWidth:1,order:2},
+      {label:`Normal(μ=${fmt(mu,1)}, σ=${fmt(sig,1)})`,
+       data:normXarr.map((x,i)=>({x,y:normYarr[i]})),
+       type:'line',borderColor:'#f43f5e',backgroundColor:'transparent',
+       borderWidth:2,pointRadius:0,fill:false,tension:.4,order:1,
+       parsing:{xAxisKey:'x',yAxisKey:'y'}}
+    ]},
+    options:dc({scales:{
+      x:{type:"linear",...DC.scales.x,title:{display:true,text:`Estado final (Día ${T})`,color:'#a5b4ca'}},
+      y:{...DC.scales.y,title:{display:true,text:'Densidad',color:'#a5b4ca'}}
+    }})
+  });
+
+  const drift=2*p-1;
+  const isMartingale=Math.abs(drift)<0.01;
+  const hasDrift=!isMartingale;
+  const ic95_T=[icInf[T],icSup[T]];
+  const probPos=walks.filter(w=>w[T]>0).length/M;
+  const probNeg=walks.filter(w=>w[T]<0).length/M;
+  fillInterp('ibox-w','#9d7dff','🧠','Paseo Aleatorio — Fluctuaciones de Humor',[
+    {title:'Tipo de proceso y su significado clínico',
+     text:`Con p = ${hv(p.toFixed(2),'hv-violet')} (prob. de mejoría diaria), ${isMartingale?
+     `el proceso es una <strong>martingala</strong>: en promedio, el humor no sube ni baja. Cada día hay la misma probabilidad de mejoría que de empeoramiento. 
+     Esto modela un paciente en <strong>estado de fluctuación sin tendencia clara</strong>, donde las mejorías y recaídas del día a día son puramente aleatorias.`:
+     hasDrift&&p>0.5?
+     `el proceso tiene un <strong>drift positivo</strong> de ${hv(fmt(drift,2),'hv-green')} puntos/día. El humor tiende a mejorar sistemáticamente con el tiempo. 
+     Tras ${T} días, la media esperada del ensemble es ${hv(fmt(teoMu,2),'hv-green')}, compatible con un proceso de recuperación gradual.`:
+     `el proceso tiene un <strong>drift negativo</strong> de ${hv(fmt(drift,2),'hv-rose')} puntos/día. El humor tiende a deteriorarse con el tiempo. 
+     Tras ${T} días, la media esperada es ${hv(fmt(teoMu,2),'hv-rose')}, lo que modela una progresión hacia el empeoramiento clínico si no se interviene.`}`},
+    {title:'Dispersión de trayectorias: Banda central 95%',
+     text:`La región sombreada en el gráfico del ensemble representa el intervalo empírico central del 95% de las trayectorias, no un intervalo de confianza de su media. 
+     Tras ${T} días, este IC es ${hv('['+fmt(ic95_T[0],1)+' , '+fmt(ic95_T[1],1)+']','hv-violet')}. 
+     <strong>Interpretación:</strong> aunque la tendencia media sea predecible, la variabilidad individual es enorme —la anchura del IC es ${hv(fmt(ic95_T[1]-ic95_T[0],1),'hv-amber')} puntos—. 
+     Esto es fundamental en psicología clínica: <strong>el promedio del grupo no permite predecir con precisión el estado de un paciente individual</strong>, 
+     especialmente conforme aumenta el período de seguimiento.`},
+    {title:'Probabilidades del estado final',
+     text:`De ${M} trayectorias simuladas, al día ${T}: 
+     ${hv((probPos*100).toFixed(1)+'% finalizan con humor positivo (>0)','hv-green')}, 
+     ${hv((probNeg*100).toFixed(1)+'% con humor negativo (<0)','hv-rose')}, 
+     y ${hv(((1-probPos-probNeg)*100).toFixed(1)+'% retornan al estado inicial (=0)')}. 
+     ${isMartingale?`Por simetría (p=0.5), estos porcentajes deberían ser aproximadamente iguales para positivo y negativo, 
+     y la distribución final se centra en 0 —verificando que el modelo no tiene sesgo—.`:
+     p>0.5?`La mayoría de trayectorias terminan en valores positivos, consistente con el drift positivo y la tendencia de recuperación.`:
+     `La mayoría de trayectorias terminan en valores negativos, reflejando la tendencia al deterioro.`}`},
+    {title:'Convergencia al Teorema Central del Límite',
+     text:`La gráfica de la distribución del estado final muestra cómo los ${M} estados X_T se distribuyen. 
+     La curva roja superpuesta es la Normal(μ = ${fmt(teoMu,1)}, σ = ${fmt(Math.sqrt(teoVar),2)}) predicha por el TCL. 
+     ${simMu!==undefined&&Math.abs(simMu-teoMu)<Math.sqrt(teoVar)*0.3?
+     `<strong>Convergencia satisfactoria:</strong> la distribución empírica se ajusta bien a la predicción normal — compatible con la media teórica; esto por sí solo no verifica el ajuste normal.`:
+     `Con M = ${M} trayectorias, la media puede fluctuar por error Monte Carlo. La aproximación normal depende también del horizonte T y de p.`} 
+     Este resultado tiene relevancia práctica: si un grupo de pacientes comienza con el mismo estado basal, 
+     tras ${T} días su distribución de estados seguirá aproximadamente esta normal, 
+     lo que permite calcular qué proporción estará por encima o debajo de umbrales clínicos de interés.`}
+  ]);
+}
+
+/* ── Auto-run on load ────────────────────────────────────────── */
+window.addEventListener('load',()=>{
+  updateMultiProbs(1);
+  clampHyper();
+  updateBinomialProb();
+  updatePoissonIntervalCalc();
+  runBinomial();
+});
+initializeAuditUI(["runBinomial","runNegBinom","runMultinomial","runHyper","runPoisson","runExpo","runWalk"]);
+</script>
+<script>window.addEventListener('load',()=>{if(!window.Chart)reportUserError(new Error('No se cargó la biblioteca de gráficos. Compruebe su conexión a internet y recargue la página.'));});</script>
+</body>
+</html>

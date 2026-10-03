@@ -1280,6 +1280,7 @@ canvas { max-width:100%; }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important;transition:none!important;scroll-behavior:auto!important; } }
 
 </style>
+<meta name="markov-build" content="2026-10-03-r2">
 </head>
 
 <body>
@@ -2244,7 +2245,7 @@ function auditRandom(){auditSeedState=(auditSeedState+0x6D2B79F5)>>>0;let t=audi
 function gammaLog(z){const co=[676.5203681218851,-1259.1392167224028,771.3234287776531,-176.6150291621406,12.507343278686905,-.1385710952657201,9.984369578019572e-6,1.505632735149312e-7];if(z<.5)return Math.log(Math.PI)-Math.log(Math.sin(Math.PI*z))-gammaLog(1-z);z--;let x=.9999999999998099;co.forEach((v,i)=>x+=v/(z+i+1));const t=z+7.5;return .5*Math.log(2*Math.PI)+(z+.5)*Math.log(t)-t+Math.log(x);}
 function chiSquareSurvival(x,df){if(x===Infinity)return 0;if(!Number.isFinite(x)||x<0||df<=0)return null;if(x===0)return 1;const a=df/2,z=x/2,scale=Math.exp(-z+a*Math.log(z)-gammaLog(a));if(z<a+1){let sum=1/a,term=sum;for(let k=1;k<10000;k++){term*=z/(a+k);sum+=term;if(Math.abs(term)<Math.abs(sum)*1e-14)break;}return Math.max(0,Math.min(1,1-scale*sum));}let b=z+1-a,c=1e300,d=1/b,h=d;for(let i=1;i<10000;i++){const an=-i*(i-a);b+=2;d=an*d+b;if(Math.abs(d)<1e-300)d=1e-300;c=b+an/c;if(Math.abs(c)<1e-300)c=1e-300;d=1/d;const delta=d*c;h*=delta;if(Math.abs(delta-1)<1e-14)break;}return Math.max(0,Math.min(1,scale*h));}
 function groupedChiSquare(obs,expected,estimatedParams=0){if(obs.length!==expected.length||obs.some(v=>!Number.isFinite(v)||v<0)||expected.some(v=>!Number.isFinite(v)||v<0))throw new Error('Conteos inválidos para χ².');let groups=[],o=0,e=0;obs.forEach((v,i)=>{if(expected[i]===0&&v>0){groups.push([v,0]);return;}o+=v;e+=expected[i];if(e>=5){groups.push([o,e]);o=0;e=0;}});if(e>0||o>0){if(groups.length){groups.at(-1)[0]+=o;groups.at(-1)[1]+=e;}else groups.push([o,e]);}const df=groups.length-1-estimatedParams;const stat=groups.reduce((s,[a,b])=>s+(b===0?(a>0?Infinity:0):(a-b)**2/b),0);return {stat,df:Math.max(0,df),pv:df>0&&groups.every(g=>g[1]>=5)?chiSquareSurvival(stat,df):null,groups};}
-function downloadAuditText(filename,text){const blob=new Blob([text],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function downloadAuditText(filename,text){const controls=document.querySelector('.audit-controls');let preview=document.getElementById('audit-preview');if(!preview){const box=document.createElement('details');box.open=true;const summary=document.createElement('summary');summary.textContent='Resumen exportable: seleccione y copie si su navegador bloquea la descarga';preview=document.createElement('textarea');preview.id='audit-preview';preview.readOnly=true;preview.rows=12;preview.style.width='100%';preview.setAttribute('aria-label','Resumen exportable');box.append(summary,preview);controls.appendChild(box);}preview.value=text;const blob=new Blob([text],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
 function reportUserError(error){const el=document.getElementById('audit-status');if(el){el.textContent=error.message||String(error);el.setAttribute('role','alert');}else alert(error.message||String(error));}
 function updateAccessibleCharts(){if(!window.Chart?.getChart)return;for(const canvas of document.querySelectorAll('canvas')){const chart=Chart.getChart(canvas);if(!chart?.data)continue;let details=document.getElementById('audit-table-'+canvas.id);if(!details){details=document.createElement('details');details.id='audit-table-'+canvas.id;details.className='audit-chart-table';canvas.insertAdjacentElement('afterend',details);}const labels=chart.data.labels||[],datasets=chart.data.datasets||[],n=Math.max(labels.length,...datasets.map(d=>d.data?.length||0));details.innerHTML='<summary>Consultar datos del gráfico en tabla</summary><div style="overflow:auto"><table><thead><tr><th scope="col">Observación</th>'+datasets.map(d=>'<th scope="col">'+escapeHTML(d.label||'Serie')+'</th>').join('')+'</tr></thead><tbody>'+Array.from({length:n},(_,i)=>'<tr><th scope="row">'+escapeHTML(labels[i]??i)+'</th>'+datasets.map(d=>{const v=d.data?.[i],text=v&&typeof v==='object'?Object.entries(v).map(([k,x])=>k+': '+x).join(', '):v??'—';return '<td>'+escapeHTML(text)+'</td>';}).join('')+'</tr>').join('')+'</tbody></table></div>';}}
 function runComputeWorker(entry,job,functions){return new Promise((resolve,reject)=>{const code='let auditSeedState=42;\n'+functions.map(f=>f.toString()).join('\n')+'\nonmessage=e=>{try{postMessage({result:'+entry+'(e.data,p=>postMessage({progress:p}))});}catch(e){postMessage({error:e.message});}}',url=URL.createObjectURL(new Blob([code],{type:'text/javascript'})),worker=new Worker(url),button=document.createElement('button');button.textContent='Cancelar cálculo';button.type='button';document.querySelector('.audit-controls').appendChild(button);const clean=()=>{worker.terminate();URL.revokeObjectURL(url);button.remove();};button.onclick=()=>{clean();reject(new Error('Cálculo cancelado.'));};worker.onmessage=e=>{if(e.data.progress!==undefined)document.getElementById('audit-status').textContent='Ajuste: '+Math.round(e.data.progress*100)+'%';if(e.data.error){clean();reject(new Error(e.data.error));}if(e.data.result){clean();resolve(e.data.result);}};worker.onerror=e=>{clean();reject(new Error(e.message||'Error al calcular.'));};worker.postMessage(job);});}
@@ -2253,7 +2254,7 @@ function initializeAuditUI(runNames=[]) {
   controls.innerHTML='<label for="audit-seed">Semilla de simulación</label><input id="audit-seed" type="number" min="0" max="4294967295" step="1" value="42"><button type="button" id="audit-export">Descargar resultados y configuración</button><p id="audit-status" role="status" aria-live="polite">Versión 3.1 · Los resultados son probabilísticos y educativos; no constituyen diagnóstico ni reemplazan el juicio profesional.</p>';
   const header=document.querySelector('header');(header||document.body).insertAdjacentElement(header?'afterend':'afterbegin',controls);
   document.getElementById('audit-export').onclick=()=>{const inputs=Array.from(document.querySelectorAll('input,select,textarea')).map(e=>(e.getAttribute('aria-label')||e.id||e.name||e.type)+': '+e.value).join('\n');const text=document.body.innerText||document.body.textContent;downloadAuditText(document.title.replace(/[^\p{L}\p{N}_-]/gu,'_')+'.txt','Versión 3.1\n'+inputs+'\n\n'+text);};
-  for(const name of runNames){const original=window[name];if(typeof original!=='function')continue;window[name]=function(...args){try{setSimulationSeed(Number(document.getElementById('audit-seed').value));for(const e of document.querySelectorAll('input[type="number"],input[type="range"]'))if(!e.disabled&&e.offsetParent!==null&&(!e.value.trim()||!Number.isFinite(Number(e.value))||(e.min!==''&&Number(e.value)<Number(e.min))||(e.max!==''&&Number(e.value)>Number(e.max))))throw new Error('Revise el campo '+(e.getAttribute('aria-label')||e.id)+': el valor está fuera de su rango.');const result=original.apply(this,args);if(result&&typeof result.catch==='function')return result.then(value=>{updateAccessibleCharts();return value;}).catch(reportUserError);updateAccessibleCharts();return result;}catch(e){reportUserError(e);}};}
+  for(const name of runNames){const original=window[name];if(typeof original!=='function')continue;window[name]=function(...args){try{setSimulationSeed(Number(document.getElementById('audit-seed').value));for(const e of document.querySelectorAll('input[type="number"],input[type="range"]'))if(!e.disabled&&e.offsetParent!==null&&(!e.value.trim()||!Number.isFinite(Number(e.value))||(e.min!==''&&Number(e.value)<Number(e.min))||(e.max!==''&&Number(e.value)>Number(e.max))))throw new Error('Revise el campo '+(e.getAttribute('aria-label')||e.id)+': el valor está fuera de su rango.');const status=document.getElementById('audit-status');status.setAttribute('role','status');status.textContent='Cálculo solicitado. Resultados educativos y condicionales al modelo.';const result=original.apply(this,args);if(result&&typeof result.catch==='function')return result.then(value=>{updateAccessibleCharts();return value;}).catch(reportUserError);updateAccessibleCharts();return result;}catch(e){reportUserError(e);}};}
   const labelFields=()=>{for(const e of document.querySelectorAll('input,select,textarea')){if(e.getAttribute('aria-label')||e.labels?.length)continue;const match=(e.id||'').match(/^(.+?)[_-](\d+)[_-](\d+)$/);e.setAttribute('aria-label',match?match[1]+': origen '+(Number(match[2])+1)+', destino '+(Number(match[3])+1):e.placeholder||e.previousElementSibling?.textContent?.trim()||e.id||'Valor configurable');}};
   labelFields();new MutationObserver(labelFields).observe(document.body,{childList:true,subtree:true});
   for(const chartClass of ['Chart']){const C=window[chartClass];if(C?.defaults){C.defaults.interaction.mode='index';C.defaults.interaction.intersect=false;C.defaults.plugins.tooltip.callbacks.label=ctx=>' '+ctx.dataset.label+': '+Number(ctx.parsed.y??ctx.parsed).toFixed(4);}}
@@ -2319,7 +2320,7 @@ function initializeAuditUI(runNames=[]) {
     //  MATRIX EDITOR WITH VALIDATION (I-02)
     // ........................................................
     function buildMatrixEditor(containerId, nRows, nCols, data, rowLabels, colLabels, prefix) {
-      const c = document.getElementById(containerId);
+      const c = document.getElementById(containerId);if(!c)return;
       // CSS Grid: columns = row-label + nCols cells + sum indicator
       const cols = `40px repeat(${nCols}, 70px) 60px`;
       let html = `<div class="matrix-table" style="grid-template-columns:${cols};">`;
@@ -2348,7 +2349,7 @@ function initializeAuditUI(runNames=[]) {
     function readMatrix(prefix,nRows,nCols) { return Array.from({length:nRows},(_,i)=>requireProbabilityVector(Array.from({length:nCols},(_,j)=>{const el=document.getElementById(prefix+'_'+i+'_'+j);return el&&el.value.trim()?Number(el.value):NaN;}),nCols,prefix+' fila '+(i+1))); }
 
     function rebuildStateInputs() { const n = parseInt(document.getElementById('n-states').value) || 3; const names = document.getElementById('state-names').value.split(',').map(s => s.trim()); while (names.length < n) names.push('S' + (names.length + 1)); buildMatrixEditor('matrix-editor', n, n, cfg.P, names, names, 'P'); }
-    function rebuildHMMInputs() { const nh = parseInt(document.getElementById('n-hidden').value) || 2; const no = parseInt(document.getElementById('n-obs').value) || 3; const hn = document.getElementById('hidden-names').value.split(',').map(s => s.trim()); const on = document.getElementById('obs-labels').value.split(',').map(s => s.trim()); buildMatrixEditor('hmm-A-matrix', nh, nh, cfg.A_hmm, hn, hn, 'A'); buildMatrixEditor('hmm-B-matrix', nh, no, cfg.B_hmm, hn, on, 'B'); }
+    function rebuildHMMInputs() {if(!document.getElementById("n-hidden"))return; const nh = parseInt(document.getElementById('n-hidden').value) || 2; const no = parseInt(document.getElementById('n-obs').value) || 3; const hn = document.getElementById('hidden-names').value.split(',').map(s => s.trim()); const on = document.getElementById('obs-labels').value.split(',').map(s => s.trim()); buildMatrixEditor('hmm-A-matrix', nh, nh, cfg.A_hmm, hn, hn, 'A'); buildMatrixEditor('hmm-B-matrix', nh, no, cfg.B_hmm, hn, on, 'B'); }
     function rebuildRiskInputs() {
       const nh = parseInt(document.getElementById('risk-n-hidden').value) || riskCfg.nHidden;
       const obsType = document.getElementById('risk-obs-type').value || riskCfg.obsType;
@@ -4063,7 +4064,7 @@ return { A, B, pi, hiddenNames, obsLabels, isContinuous, nObs };
       const el = document.getElementById('rd-mc-state-legend');
       if (el) el.innerHTML = names.map((n, i) => `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.68rem;font-family:'DM Mono',monospace;"><span style="width:10px;height:10px;border-radius:50%;background:${COLORS[i]};"></span>${i}=${n}</span>`).join('');
     }
-    function updateHMMObsLegendRD() {
+    function updateHMMObsLegendRD() {if(!document.getElementById("obs-labels"))return;
       const labels = document.getElementById('obs-labels').value.split(',').map(s => s.trim());
       const el = document.getElementById('rd-hmm-obs-legend');
       if (el) el.innerHTML = labels.map((l, i) => `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.68rem;font-family:'DM Mono',monospace;"><span style="width:10px;height:10px;border-radius:50%;background:${COLORS[i]};"></span>${i}=${l}</span>`).join('');
@@ -4093,7 +4094,7 @@ return { A, B, pi, hiddenNames, obsLabels, isContinuous, nObs };
       cfg.P = P.map(r => [...r]); cfg.stateNames = stateNames; cfg.nStates = n;
       window._lastMCData = { sequences, allSeq, P, counts, stateNames };
       document.getElementById('rd-mc-results-section').style.display = 'block';
-      const pi = stationaryDist(P, n);
+      const pi=stationaryDistribution(P,requireProbabilityVector(document.getElementById('pi0-input').value.split(',').map(v=>v.trim()?Number(v):NaN),n,'π inicial'));
       const timeUnit = document.getElementById('time-unit').value;
       const horizon = parseInt(document.getElementById('horizon').value) || 30;
       const mcIter = parseInt(document.getElementById('mc-iter').value) || 1000;
@@ -4230,14 +4231,14 @@ return { A, B, pi, hiddenNames, obsLabels, isContinuous, nObs };
       else iHTML += `Esto indica una <strong>alta regularidad</strong> en las transiciones: el estado futuro puede predecirse con bastante confianza a partir del estado actual.`;
       iHTML += ` (Referencia: 0 bits = determinístico; ${Math.log2(n).toFixed(2)} bits = completamente aleatorio para ${n} estados.)</p>`;
 
-      iHTML += `<h4>5. Conclusión Clínica</h4>`;
+      iHTML += `<h4>5. Lectura condicional del modelo</h4>`;
       const domState = stateNames[maxPiIdx];
       const isNegDom = maxPiIdx === n - 1;
       const isPosDom = maxPiIdx === 0;
       if (isNegDom) {
         iHTML += `<p>El estado de mayor carga (<strong style="color:${COLORS[maxPiIdx]}">${domState}</strong>) domina la distribución a largo plazo con un <strong>${(pi[maxPiIdx]*100).toFixed(1)}%</strong>. Esto sugiere que, sin intervención, la mayoría de los sujetos tiende a estabilizarse en el estado más negativo. Se recomienda revisar la efectividad de las intervenciones actuales y reforzar los mecanismos de transición hacia estados más favorables.</p>`;
       } else if (isPosDom) {
-        iHTML += `<p>El estado de mejor pronóstico (<strong style="color:${COLORS[maxPiIdx]}">${domState}</strong>) domina la distribución estacionaria con un <strong>${(pi[maxPiIdx]*100).toFixed(1)}%</strong>. Esto sugiere que el grupo tiende naturalmente hacia un estado favorable a largo plazo, lo cual es un indicador positivo de la dinámica del sistema.</p>`;
+        iHTML += `<p>El estado de mejor pronóstico (<strong style="color:${COLORS[maxPiIdx]}">${domState}</strong>) domina la distribución estacionaria con un <strong>${(pi[maxPiIdx]*100).toFixed(1)}%</strong>. Esto sugiere que ese estado tiene mayor ocupación estacionaria bajo la matriz estimada; esto no identifica evolución natural ni efecto terapéutico.</p>`;
       } else {
         iHTML += `<p>El estado intermedio (<strong style="color:${COLORS[maxPiIdx]}">${domState}</strong>) domina la distribución estacionaria con un <strong>${(pi[maxPiIdx]*100).toFixed(1)}%</strong>. El sistema no converge hacia ningún extremo, lo que puede reflejar una población heterogénea o una respuesta variable al tratamiento.</p>`;
       }
@@ -5281,7 +5282,7 @@ let bicTable = null;
       document.getElementById('dr-interp-cv').innerHTML = `<div class="callout ${cvOk?'callout-ok':cvWarn?'callout-warn':'callout-warn'}">
         ${cvOk ? `<strong style="color:var(--ok)">✓ Modelo generaliza correctamente.</strong> ΔLogL=${deltaLogL.toFixed(1)}% < 10%. El AR-HMM reestimado en el 70% inicial mantiene una verosimilitud media similar en el 30% final.`
                : cvWarn ? `<strong style="color:var(--warn)">⚠ Sobreajuste leve.</strong> ΔLogL=${deltaLogL.toFixed(1)}% entre 10-20%. El ajuste en entrenamiento es mejor que en prueba, pero la pérdida todavía es moderada.`
-               : `<strong style="color:var(--crit)">✗ Sobreajuste claro.</strong> ΔLogL=${deltaLogL.toFixed(1)}% > 20%. El modelo no generaliza bien al tramo final. Recomendaciones: (1) reducir K en 1 y reestimar, (2) reducir orden AR q, (3) verificar T suficiente (regla orientativa: T > 20·K·q = ${20*K*q}).`}
+               : `<strong style="color:var(--crit)">⚠ Diferencia de rendimiento temporal.</strong> ΔLogL=${deltaLogL.toFixed(1)}% > 20%. La diferencia puede deberse a variación muestral, cambios de régimen o sobreajuste; el umbral no distingue sus causas. Recomendaciones: (1) reducir K en 1 y reestimar, (2) reducir orden AR q, (3) verificar T suficiente (regla orientativa: T > 20·K·q = ${20*K*q}).`}
         <br><small style="color:var(--muted)">La validación 70/30 ahora sigue el mismo criterio que la pestaña equivalente en HMM_v2: el modelo se reestima en Train y luego se evalúa fijo sobre Test.</small>
       </div>`;
 
@@ -5321,7 +5322,7 @@ let bicTable = null;
           options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } }, scales: { x: { title: { display: true, text: 'Duración (períodos)', color: '#64748b' }, ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } }, y: { title: { display: true, text: 'Proporción', color: '#64748b' }, ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } } } }
         });
         const ksOk = ks.pval !== null && parseFloat(ks.pval) > 0.05;
-        durMessages.push(`<strong style="color:${ksOk?'var(--ok)':'var(--warn)'}">${ksOk?'✓':'⚠'} ${params[s].name}:</strong> p̂_geom = ${p_geom.toFixed(3)}, dur. media = ${meanDur.toFixed(2)} días${ks.D ? `, KS D=${ks.D}, p=${ks.pval}` : ''}. ${ksOk ? 'Distribución geométrica adecuada — HMM estándar válido.' : `Distribución geométrica rechazada (p<0.05). Si hay un pico en una duración fija, considerar HSMM con distribución de duración explícita (Normal o Gamma).`}`);
+        durMessages.push(`<strong style="color:${ksOk?'var(--ok)':'var(--warn)'}">${ksOk?'✓':'⚠'} ${params[s].name}:</strong> p̂_geom = ${p_geom.toFixed(3)}, dur. media = ${meanDur.toFixed(2)} días${ks.D ? `, KS D=${ks.D}, p=${ks.pval}` : ''}. ${ksOk ? 'No se rechaza el modelo geométrico con este contraste; no demuestra validez del HMM.' : `Distribución geométrica rechazada (p<0.05). Si hay un pico en una duración fija, considerar HSMM con distribución de duración explícita (Normal o Gamma).`}`);
       }
       document.getElementById('dr-interp-dur').innerHTML = `<div class="callout ${durMessages.some(m=>m.includes('⚠'))?'callout-warn':'callout-ok'}">${durMessages.join('<br>')}</div>`;
 

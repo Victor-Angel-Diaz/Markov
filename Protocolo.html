@@ -325,6 +325,7 @@ canvas { max-width:100%; }
 
 #protocol-text details{margin:12px 0;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px}#protocol-text summary{cursor:pointer;min-height:44px}#protocol-text p{line-height:1.7}#protocol-text h3{margin:16px 0 8px}
 </style>
+<meta name="markov-build" content="2026-10-03-r2">
 </head>
 <body>
 
@@ -401,7 +402,7 @@ flowchart TD
     F1_STAT{"Estacionariedad?<br/>ADF + KPSS<br/>por segmento"}
     F1_STAT -->|"ADF y KPSS<br/>ESTACIONARIO<br/>ambos coinciden"| F1_EMIT
     F1_STAT -->|"ADF y KPSS<br/>NO ESTACIONARIO<br/>ambos coinciden"| F1_NONHOM["HMM No Homogeneo<br/>covariables temporales<br/>Patron semanal? - Fourier"]
-    F1_STAT -->|"ADF y KPSS<br/>DISCORDANTES"| F1_STAT_CONF["Resolver conflicto:<br/>ambos rechazan - tend. deterministica<br/>detrend o diferenciar<br/>ninguno rechaza - T corto<br/>media movil + criterio clinico"]
+    F1_STAT -->|"ADF y KPSS<br/>DISCORDANTES"| F1_STAT_CONF["Resultados discordantes:<br/>Revisar especificación, retardos,<br/>tendencia, rupturas y longitud.<br/>No inferir causas automáticamente."]
     F1_NONHOM --> F1_EMIT
     F1_STAT_CONF --> F1_EMIT
 
@@ -582,7 +583,7 @@ flowchart TD
         · Errores frecuentes
         <div style="margin-top:1rem;padding:0.75rem;background:rgba(210,153,34,0.08);border:1px solid rgba(210,153,34,0.25);border-radius:6px;text-align:left;line-height:1.6">
           <strong style="color:var(--amber);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em">Caso clínico transversal</strong><br>
-          <span style="font-size:0.75rem;color:var(--text)"><strong>Carmen, 34 años.</strong> Psicóloga con depresión recurrente. Usa app ESM durante 6 meses (T=182 días, ánimo 0–10 diario). El protocolo se sigue completo con sus datos reales.</span>
+          <span style="font-size:0.75rem;color:var(--text)"><strong>Carmen, 34 años.</strong> Psicóloga con depresión recurrente. Usa app ESM durante 6 meses (T=182 días, ánimo 0–10 diario). Caso ficticio e ilustrativo; los datos y las decisiones del ejemplo no corresponden a una paciente real.</span>
         </div>
       </div>
     </div>

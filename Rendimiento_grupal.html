@@ -1026,6 +1026,7 @@ function runSimulation(){
     </div>`).join('');
 
   // Evolution table — use T axis same as MATLAB
+  const header=$('tbody-evol').closest('table').querySelector('thead tr');header.replaceChildren(...['Tiempo',...STATES].map(name=>{const cell=document.createElement('th');cell.textContent=name;return cell;}));
   $('tbody-evol').innerHTML=times.map((t,idx)=>`
     <tr>
       <td class="mono">${fmt(t,1)}</td>
